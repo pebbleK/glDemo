@@ -2,6 +2,7 @@
 #include"Shader.h"
 #include"ffImage.h"
 #include"Camera.h"
+#include"IO.h"
 
 uint VAO_cube = 0; //使用核心模式
 uint VAO_sun = 0;
@@ -15,6 +16,8 @@ ffImage* _pImage = NULL;
 Shader _shader_sun;
 Shader _shader_scene;
 Shader _shader_color;
+
+FF::ffModel* _model;
 
 //材质贴图
 uint _textureBox = 0;
@@ -36,6 +39,32 @@ bool isLookingAtCube(glm::vec3 cameraPos, glm::vec3 cameraDir, glm::vec3 cubeCen
 	return dotValue > 0.98f;
 }
 
+void drawOutline(Shader _shader, glm::mat4 _modelMatrix, glm::vec3 _position) {
+	_shader.start();
+
+	_shader.setMatrix("_viewMatrix", _camera.getMatrix());
+	_shader.setMatrix("_projMatrix", _projMatrix);
+
+	glStencilFunc(GL_NEVER, 1, 0xFF); //所有都不通过
+	glStencilMask(0x00);// 禁止写入模板缓冲区
+
+	glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+
+
+	_modelMatrix = glm::mat4(1.0f);
+	_modelMatrix = glm::translate(_modelMatrix, _position);
+	_modelMatrix = glm::rotate(_modelMatrix, glm::radians(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	_modelMatrix = glm::scale(_modelMatrix, glm::vec3(1.1f)); //稍微放大一些
+
+	_shader.setMatrix("_modelMatrix", _modelMatrix);
+	glBindVertexArray(VAO_cube);
+	glDrawArrays(GL_TRIANGLES, 0, 36);
+
+	_shader.end();
+
+	glStencilFunc(GL_ALWAYS, 1, 0xFF);
+}
+
 void rend() {
 
 	glEnable(GL_DEPTH_TEST);
@@ -47,7 +76,7 @@ void rend() {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 	glm::vec3 cubePositions = glm::vec3(0.0f, 0.0f, 0.0f);
-
+	glm::vec3 modelPositions = glm::vec3(0.5f, 0.5f, 0.5f);
 	glm::vec3 pointLightPositions = glm::vec3(0.7f, 0.2f, 2.0f);
 
 	_camera.update();
@@ -104,11 +133,12 @@ void rend() {
 	_shader_scene.setFloat("_spotLight.m_l", 0.09f);
 	_shader_scene.setFloat("_spotLight.m_q", 0.032f);
 
-	//绘制立方体
-
+	//模板测试通过则替换模板缓冲区的内容
 	glStencilFunc(GL_ALWAYS, 1, 0xFF);
 	glStencilMask(0xFF);
-			glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE); //模板测试通过则替换模板缓冲区的内容
+	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+
+	//绘制立方体
 
 	_modelMatrix = glm::mat4(1.0f);
 	_modelMatrix = glm::translate(_modelMatrix, cubePositions);
@@ -118,6 +148,11 @@ void rend() {
 	glBindVertexArray(VAO_cube);
 	glDrawArrays(GL_TRIANGLES, 0, 36);
 
+	//绘制模型
+	_modelMatrix = glm::mat4(1.0f);
+	_modelMatrix = glm::translate(_modelMatrix, modelPositions);
+	_modelMatrix = glm::scale(_modelMatrix, glm::vec3(0.2f));
+	_model->draw(_shader_scene);
 
 	_shader_scene.end();
 
@@ -131,30 +166,7 @@ void rend() {
 
 	//绘制描边
 	if (lookingAtCube) {
-		_shader_color.start();
-
-		_shader_color.setMatrix("_viewMatrix", _camera.getMatrix());
-		_shader_color.setMatrix("_projMatrix", _projMatrix);
-
-		glStencilFunc(GL_NEVER, 1, 0xFF); //所有都不通过
-		glStencilMask(0x00);// 禁止写入模板缓冲区
-
-		glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
-
-
-		_modelMatrix = glm::mat4(1.0f);
-		_modelMatrix = glm::translate(_modelMatrix, cubePositions);
-		_modelMatrix = glm::rotate(_modelMatrix, glm::radians(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-		_modelMatrix = glm::scale(_modelMatrix, glm::vec3(1.1f)); //稍微放大一些
-
-		_shader_color.setMatrix("_modelMatrix", _modelMatrix);
-		glBindVertexArray(VAO_cube);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-
-
-		_shader_color.end();
-
-		glStencilFunc(GL_ALWAYS, 1, 0xFF);
+		drawOutline(_shader_color, _modelMatrix, cubePositions);
 	}
 
 	//光源
@@ -175,8 +187,6 @@ void rend() {
 	glDrawArrays(GL_TRIANGLES, 0, 36);
 
 	_shader_sun.end();
-
-
 
 }
 
@@ -368,6 +378,8 @@ int main() {
 
 	_textureBox = creatTexture("res/box.png");
 	_textureSpec = creatTexture("res/specular.png");
+	_model = new FF::ffModel("res/吊灯.obj");
+
 	initShader("", "");
 
 	while (!glfwWindowShouldClose(window)) {

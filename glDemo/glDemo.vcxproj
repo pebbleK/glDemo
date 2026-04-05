@@ -126,12 +126,14 @@
     <ClInclude Include="Base.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="ffImage.h" />
+    <ClInclude Include="IO.h" />
     <ClInclude Include="Shader.h" />
     <ClInclude Include="stb_image.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="ffImage.cpp" />
+    <ClCompile Include="IO.cpp" />
     <ClCompile Include="openGLFW.cpp" />
     <ClCompile Include="Shader.cpp" />
   </ItemGroup>
