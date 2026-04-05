@@ -75,7 +75,7 @@ void rend() {
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-	glm::vec3 cubePositions = glm::vec3(0.0f, 0.0f, 0.0f);
+	glm::vec3 cubePositions = glm::vec3(0.7f, 1.0f, 2.0f);
 	glm::vec3 modelPositions = glm::vec3(0.5f, 0.5f, 0.5f);
 	glm::vec3 pointLightPositions = glm::vec3(0.7f, 0.2f, 2.0f);
 
@@ -376,9 +376,9 @@ int main() {
 	//light_pos = glm::vec3(2.0f, 0.0f, 0.0f); // 光源位置
 	light_color = glm::vec3(1.0f, 1.0f, 1.0f); // 光源颜色
 
-	_textureBox = creatTexture("res/box.png");
-	_textureSpec = creatTexture("res/specular.png");
-	_model = new FF::ffModel("res/吊灯.obj");
+	_textureBox = creatTexture("res/texture/box.png");
+	_textureSpec = creatTexture("res/texture/specular.png");
+	_model = new FF::ffModel("res/model/吊灯.obj");
 
 	initShader("", "");
 
