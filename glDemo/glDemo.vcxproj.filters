@@ -30,6 +30,9 @@
     <ClInclude Include="stb_image.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="IO.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Camera.cpp">
@@ -42,6 +45,12 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="Shader.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="IO.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="black_hole.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
@@ -86,6 +95,15 @@
       <Filter>资源文件</Filter>
     </None>
     <None Include="shader\vsunShader.glsl">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="shader\geodesic.comp">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="shader\grid.frag">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="shader\grid.vert">
       <Filter>资源文件</Filter>
     </None>
   </ItemGroup>

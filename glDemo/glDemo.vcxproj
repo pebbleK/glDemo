@@ -131,6 +131,7 @@
     <ClInclude Include="stb_image.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="black_hole.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="ffImage.cpp" />
     <ClCompile Include="IO.cpp" />
@@ -144,6 +145,9 @@
     <None Include="shader\dirShaderv.glsl" />
     <None Include="shader\fragmentShader.glsl" />
     <None Include="shader\fsunShader.glsl" />
+    <None Include="shader\geodesic.comp" />
+    <None Include="shader\grid.frag" />
+    <None Include="shader\grid.vert" />
     <None Include="shader\pointShaderf.glsl" />
     <None Include="shader\pointShaderv.glsl" />
     <None Include="shader\sceneShaderf.glsl" />
