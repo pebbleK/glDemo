@@ -11,31 +11,36 @@ namespace FF {
 	}
 
 	void ffMesh::draw(Shader& _shader) {
-		uint _diffuseN = 1;
-		uint _specularN = 1; 
-
+		uint diffuseTex = 0;
+		uint specularTex = 0;
 		for (uint i = 0; i < m_texVec.size(); i++) {
-			glActiveTexture(GL_TEXTURE0 + i);
-
-			//拼装shader传参字符串
-			std::string _typename = m_texVec[i].m_type;
-			std::string _numStr;
-			if (_typename == TEXTURE_DIFFUSE_STR) {
-				_numStr = std::to_string(_diffuseN++);
+			if (m_texVec[i].m_type == TEXTURE_DIFFUSE_STR && diffuseTex == 0) {
+				diffuseTex = m_texVec[i].m_id;
 			}
-			if (_typename == TEXTURE_SPECULAR_STR) {
-				_numStr = std::to_string(_specularN++);
+			else if (m_texVec[i].m_type == TEXTURE_SPECULAR_STR && specularTex == 0) {
+				specularTex = m_texVec[i].m_id;
 			}
-
-			_shader.setFloat("myMaterial." + _typename + _numStr, i); //这里i指的是GL_TEXTUREi
-			glBindTexture(GL_TEXTURE_2D, m_texVec[i].m_id);
 		}
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, diffuseTex);
+		_shader.setInt("myMaterial.m_diffuse", 0);
 
-		glActiveTexture(0);
+		if (specularTex != 0) {
+			glActiveTexture(GL_TEXTURE1);
+			glBindTexture(GL_TEXTURE_2D, specularTex);
+			_shader.setInt("myMaterial.m_specular", 1);
+			_shader.setInt("myMaterial.hasSpecularMap", 1);
+		}
+		else {
+			glActiveTexture(GL_TEXTURE1);
+			glBindTexture(GL_TEXTURE_2D, 0);
+			_shader.setInt("myMaterial.hasSpecularMap", 0);
+		}
 
 		glBindVertexArray(m_VAO);
 		glDrawElements(GL_TRIANGLES, m_indexVec.size(), GL_UNSIGNED_INT, 0);
 		glBindVertexArray(0);
+		glActiveTexture(GL_TEXTURE0);
 	}
 
 	void ffMesh::setupMesh() {
@@ -58,9 +63,9 @@ namespace FF {
 		glEnableVertexAttribArray(0);
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(ffVertex), (void*)0);
 		glEnableVertexAttribArray(1);
-		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(ffVertex), (void*)offsetof(ffVertex, m_texCoord));
+		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(ffVertex), (void*)offsetof(ffVertex, m_texCoord));
 		glEnableVertexAttribArray(2);
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(ffVertex), (void*)offsetof(ffVertex, m_normal));
+		glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(ffVertex), (void*)offsetof(ffVertex, m_normal));
 
 		glBindVertexArray(0);
 
@@ -68,16 +73,16 @@ namespace FF {
 
 	void ffModel::loadModel(std::string _path) {
 		Assimp::Importer importer;
-		// 如果传入四边形，则把四边形拆分成三角形(aiProcess_Triangulate)
-		// 如果纹理坐标是颠倒的，则把纹理坐标翻转(aiProcess_FlipUVs)
-		const aiScene* _scene = importer.ReadFile(_path, aiProcess_Triangulate | aiProcess_FlipUVs);
-
+		// If a quadrilateral is passed, split it into triangles (aiProcess_Triangulate)
+		// If the texture coordinates are inverted, flip the texture coordinates (aiProcess_FlipUVs)
+		const aiScene* _scene = importer.ReadFile(_path, aiProcess_Triangulate);
+		
 		if(!_scene || _scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !_scene->mRootNode) {
 			std::cout << "model read fail!"<< std::endl;
 			return;
 		}
 
-		m_dir = _path.substr(0, _path.find_last_of('/')); //获取路径中的目录部分
+		m_dir = _path.substr(0, _path.find_last_of('/')); //Get the directory part of the path
 		processNode(_scene->mRootNode, _scene);
 	}
 
@@ -97,28 +102,28 @@ namespace FF {
 		std::vector<uint>		_indexVec;	
 		std::vector<ffTexture>	_texVec;
 
-		//解析顶点
+		//Parse vertices
 		for (uint i = 0; i < _mesh->mNumVertices; i++) {
 			ffVertex _vertex;
 
-			//位置信息读取
+			//Location information reading
 			glm::vec3 _pos;
 			_pos.x = _mesh->mVertices[i].x;
 			_pos.y = _mesh->mVertices[i].y;
 			_pos.z = _mesh->mVertices[i].z;
 			_vertex.m_pos = _pos;
 
-			//法线读取
+			//normal reading
 			glm::vec3 _normal;
 			_normal.x = _mesh->mNormals[i].x;
 			_normal.y = _mesh->mNormals[i].y;
 			_normal.z = _mesh->mNormals[i].z;
 			_vertex.m_normal = _normal;
 
-			//纹理坐标读取
+			//texture coordinate reading
 			if (_mesh->mTextureCoords[0]) {
 				glm::vec2 _texCoord;
-				//纹理中有很多套，第0位置的一套UV即传统的UV坐标
+				//There are many sets in the texture, and the UV set at position 0 is the traditional UV coordinates.
 				_texCoord.x = _mesh->mTextureCoords[0][i].x;
 				_texCoord.y = _mesh->mTextureCoords[0][i].y;
 				_vertex.m_texCoord = _texCoord;
@@ -127,16 +132,16 @@ namespace FF {
 			_vertexVec.push_back(_vertex);
 		}
 
-		//解析index
+		//Parse index
 		for (uint i = 0; i < _mesh->mNumFaces; i++) {
 			aiFace _face = _mesh->mFaces[i];
-			//每一个面mNumFaces有很多小三角形mFaces，每一个三角形有三个索引顶点
+			//Each face mNumFaces contains many small triangles mFaces, and each triangle has three vertex indices.
 			for (uint j = 0; j < _face.mNumIndices; j++) {
 				_indexVec.push_back(_face.mIndices[j]);
 			}
 		}
 
-		//解析材质
+		//Parse texture
 		if (_mesh->mMaterialIndex >= 0) {
 			aiMaterial* _mat = _scene->mMaterials[_mesh->mMaterialIndex];
 			//diffuse
@@ -157,7 +162,7 @@ namespace FF {
 			ffTexture _tex;
 
 			aiString _path;
-			_mat->GetTexture(_type, i, &_path); //这个纹理相对于模型的位置
+			_mat->GetTexture(_type, i, &_path); //The position of this texture relative to the model
 
 			_tex.m_id = ffTextureManager::getInstance()->creatTexture(_path.C_Str(), m_dir);
 			_tex.m_path = _path.C_Str();

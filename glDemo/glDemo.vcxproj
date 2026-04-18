@@ -131,7 +131,6 @@
     <ClInclude Include="stb_image.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="black_hole.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="ffImage.cpp" />
     <ClCompile Include="IO.cpp" />

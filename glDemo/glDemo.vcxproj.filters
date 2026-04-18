@@ -50,9 +50,6 @@
     <ClCompile Include="IO.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="black_hole.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="shader\colorShaderf.glsl">

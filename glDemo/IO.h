@@ -5,8 +5,8 @@
 #include<assimp/scene.h>
 #include<assimp/postprocess.h>
 
-#define TEXTURE_DIFFUSE_STR "texture_diffuse"
-#define TEXTURE_SPECULAR_STR "texture_specular"
+#define TEXTURE_DIFFUSE_STR "m_diffuse"
+#define TEXTURE_SPECULAR_STR "m_specular"
 
 namespace FF {
 	//使用struct的好处就是struct的内存排布是连续的，class不一定
