@@ -50,3 +50,7 @@ x86/
 # Visual Studio cache/options directory
 .vs/
 
+# Visual Studio project files (generated)
+*.vsxproj
+*.vsxproj.filters
+
