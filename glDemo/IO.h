@@ -36,6 +36,7 @@ namespace FF {
 		float m_shininess;
 		ffMaterial() {
 			m_diffuseColor = glm::vec3(1.0f);
+			// Use this specular coefficient when the MTL file does not provide Ks.
 			m_specularColor = glm::vec3(0.0f);
 			m_shininess = 32.0f;
 		}

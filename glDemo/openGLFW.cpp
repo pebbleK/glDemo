@@ -2,6 +2,7 @@
 #include "Shader.h"
 #include "Camera.h"
 #include "IO.h"
+#include "BlackHoleBackground.h"
 
 uint VAO_sun = 0;
 
@@ -11,6 +12,7 @@ Shader _shader_sun;
 Shader _shader_scene;
 
 FF::ffModel* _model;
+BlackHoleBackground _blackHoleBackground;
 
 Camera _camera;
 glm::mat4 _projMatrix(1.0f);
@@ -26,6 +28,8 @@ void rend() {
     _camera.update();
     _projMatrix = glm::perspective(glm::radians(45.0f), (float)_width / (float)_height, 0.1f, 100.0f);
     glm::mat4 _modelMatrix(1.0f);
+
+    _blackHoleBackground.render(_camera);
 
     // Object rendering
     _shader_scene.start();
@@ -159,7 +163,10 @@ void initShader(const char* _vertexPath, const char* _fragPath) {
 }
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
+	_width = width;
+	_height = height;
 	glViewport(0, 0, width, height);
+	_blackHoleBackground.resize(width, height);
 }
 
 //keyboard input
@@ -199,8 +206,8 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
 
 int main() {
     glfwInit(); // Get context
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3); // Version configuration, version 3 and above uses core development mode
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3); // Compute shader background requires OpenGL 4.3
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); // Select OpenGL configuration mode
 
     GLFWwindow* window = glfwCreateWindow(_width, _height, "OpenGL Core", NULL, NULL);
@@ -214,6 +221,11 @@ int main() {
     // Get OpenGL function pointers via GLAD, e.g., #define
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
         std::cout << "Failed to initialize GLAD" << std::endl;
+        return -1;
+    }
+
+    if (!_blackHoleBackground.init(_width, _height)) {
+        std::cout << "Failed to initialize black hole background" << std::endl;
         return -1;
     }
 
