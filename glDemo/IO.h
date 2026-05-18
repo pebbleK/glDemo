@@ -9,7 +9,7 @@
 #define TEXTURE_SPECULAR_STR "m_specular"
 
 namespace FF {
-	//使用struct的好处就是struct的内存排布是连续的，class不一定
+	// The advantage of using struct is that the memory layout of struct is continuous, which is not necessarily the case for class
 	struct ffVertex {
 		glm::vec3 m_pos;
 		glm::vec3 m_normal;
@@ -30,15 +30,27 @@ namespace FF {
 		std::string		m_path;	
 	};
 
+	struct ffMaterial {
+		glm::vec3 m_diffuseColor;
+		glm::vec3 m_specularColor;
+		float m_shininess;
+		ffMaterial() {
+			m_diffuseColor = glm::vec3(1.0f);
+			m_specularColor = glm::vec3(0.0f);
+			m_shininess = 32.0f;
+		}
+	};
+
 	class ffMesh {
 	public:
-		ffMesh(std::vector<ffVertex> _vertexVec, std::vector<uint> _indexVec, std::vector<ffTexture> _texVec);
+		ffMesh(std::vector<ffVertex> _vertexVec, std::vector<uint> _indexVec, std::vector<ffTexture> _texVec, ffMaterial _material);
 		void draw(Shader& _shader);
 
 	private:
-		std::vector<ffVertex>	m_vertexVec;	//存储顶点，法线，UV
-		std::vector<uint>		m_indexVec;		//顶点索引
-		std::vector<ffTexture>	m_texVec;		//存储纹理id，类型，路径
+		std::vector<ffVertex>	m_vertexVec;	// store vertex, nomal, UV
+		std::vector<uint>		m_indexVec;		// vertex index
+		std::vector<ffTexture>	m_texVec;		// store texture ID, type and path
+		ffMaterial				m_material;
 
 		GLuint m_VAO;           
 		void setupMesh();
@@ -69,7 +81,7 @@ namespace FF {
 		SINGLE_INSTANCE(ffTextureManager)
 		ffTextureManager(){}
 
-		std::map<std::string, uint> m_texMap; //存储纹理路径和texID
+		std::map<std::string, uint> m_texMap; // store texture path and texID
 	};
 }
 

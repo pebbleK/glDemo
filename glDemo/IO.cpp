@@ -2,10 +2,11 @@
 #include"ffImage.h"
 
 namespace FF {
-	ffMesh::ffMesh(std::vector<ffVertex> _vertexVec, std::vector<uint> _indexVec, std::vector<ffTexture> _texVec) {
+	ffMesh::ffMesh(std::vector<ffVertex> _vertexVec, std::vector<uint> _indexVec, std::vector<ffTexture> _texVec, ffMaterial _material) {
 		m_vertexVec = _vertexVec;
 		m_indexVec = _indexVec;
 		m_texVec = _texVec;
+		m_material = _material;
 
 		setupMesh();
 	}
@@ -24,6 +25,9 @@ namespace FF {
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, diffuseTex);
 		_shader.setInt("myMaterial.m_diffuse", 0);
+		_shader.setVec3("myMaterial.m_diffuseColor", m_material.m_diffuseColor);
+		_shader.setVec3("myMaterial.m_specularColor", m_material.m_specularColor);
+		_shader.setFloat("myMaterial.m_shiness", m_material.m_shininess);
 
 		if (specularTex != 0) {
 			glActiveTexture(GL_TEXTURE1);
@@ -101,6 +105,7 @@ namespace FF {
 		std::vector<ffVertex>	_vertexVec;
 		std::vector<uint>		_indexVec;	
 		std::vector<ffTexture>	_texVec;
+		ffMaterial				_material;
 
 		//Parse vertices
 		for (uint i = 0; i < _mesh->mNumVertices; i++) {
@@ -144,6 +149,17 @@ namespace FF {
 		//Parse texture
 		if (_mesh->mMaterialIndex >= 0) {
 			aiMaterial* _mat = _scene->mMaterials[_mesh->mMaterialIndex];
+			aiColor3D _color(0.0f, 0.0f, 0.0f);
+			if (_mat->Get(AI_MATKEY_COLOR_DIFFUSE, _color) == AI_SUCCESS) {
+				_material.m_diffuseColor = glm::vec3(_color.r, _color.g, _color.b);
+			}
+			if (_mat->Get(AI_MATKEY_COLOR_SPECULAR, _color) == AI_SUCCESS) {
+				_material.m_specularColor = glm::vec3(_color.r, _color.g, _color.b);
+			}
+			float _shininess = 0.0f;
+			if (_mat->Get(AI_MATKEY_SHININESS, _shininess) == AI_SUCCESS) {
+				_material.m_shininess = _shininess;
+			}
 			//diffuse
 			std::vector<ffTexture> _diffuseVec = loadMaterialTextures(_mat,aiTextureType_DIFFUSE, TEXTURE_DIFFUSE_STR);
 			_texVec.insert(_texVec.end(), _diffuseVec.begin(), _diffuseVec.end());
@@ -152,7 +168,7 @@ namespace FF {
 			_texVec.insert(_texVec.end(), _specularVec.begin(), _specularVec.end());
 		}
 		
-		return ffMesh(_vertexVec, _indexVec, _texVec);
+		return ffMesh(_vertexVec, _indexVec, _texVec, _material);
 	}
 
 	std::vector<ffTexture> ffModel::loadMaterialTextures(aiMaterial* _mat, aiTextureType _type, std::string _typeName) {

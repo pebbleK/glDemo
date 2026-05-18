@@ -9,6 +9,8 @@ struct Material {
 	sampler2D m_diffuse;
 	sampler2D m_specular;
 
+	vec3 m_diffuseColor;
+	vec3 m_specularColor;
 	float m_shiness;
 	int hasSpecularMap;
 };
@@ -63,22 +65,26 @@ uniform vec3 view_pos;
 
 vec3 getSpecularColor(){
 	if (myMaterial.hasSpecularMap == 1) {
-		return vec3(texture(myMaterial.m_specular, outUV));
+		return myMaterial.m_specularColor * vec3(texture(myMaterial.m_specular, outUV));
 	}
 
-	return vec3(0.2f);
+	return myMaterial.m_specularColor;
+}
+
+vec3 getDiffuseColor(){
+	return myMaterial.m_diffuseColor * vec3(texture(myMaterial.m_diffuse, outUV));
 }
 
 vec3 calculateDir(DirLight _light, vec3 _normal, vec3 _viewDir){
 	// Normalize light direction
-	vec3 _lightDir = normalize(_light.m_direction); // ƽ�й��Դ���������뷽��
+	vec3 _lightDir = normalize(_light.m_direction);
 
 	// ambient light intensity
-	vec3 _ambient = _light.m_ambient * vec3(texture(myMaterial.m_diffuse, outUV));
+	vec3 _ambient = _light.m_ambient * getDiffuseColor();
 
 	// diffuse light intensity
 	float _diff  = max(dot(_normal, -_lightDir), 0.0f);
-	vec3 _diffuse = _diff * _light.m_diffuse * vec3(texture(myMaterial.m_diffuse, outUV));
+	vec3 _diffuse = _diff * _light.m_diffuse * getDiffuseColor();
 
 	// specular light intensity
 	vec3 _reflectDir = reflect(_lightDir, _normal);
@@ -91,10 +97,10 @@ vec3 calculateDir(DirLight _light, vec3 _normal, vec3 _viewDir){
 vec3 calculatePoint(PointLight _light, vec3 _normal, vec3 _viewDir, vec3 _fragPos){
 	vec3 _lightDir = normalize(_fragPos - _light.m_pos);
 	// ambient light intensity
-	vec3 _ambient = _light.m_ambient * vec3(texture(myMaterial.m_diffuse, outUV));
+	vec3 _ambient = _light.m_ambient * getDiffuseColor();
 	// diffuse light intensity
 	float _diff  = max(dot(_normal, -_lightDir), 0.0f);
-	vec3 _diffuse = _diff * _light.m_diffuse * vec3(texture(myMaterial.m_diffuse, outUV));
+	vec3 _diffuse = _diff * _light.m_diffuse * getDiffuseColor();
 	// specular light intensity
 	vec3 _reflectDir = reflect(_lightDir, _normal);
 	float _spec = pow(max(dot(_viewDir, _reflectDir), 0.0f), myMaterial.m_shiness);
@@ -110,10 +116,10 @@ vec3 calculatePoint(PointLight _light, vec3 _normal, vec3 _viewDir, vec3 _fragPo
 vec3 calculateSpot(SpotLight _light, vec3 _normal, vec3 _viewDir, vec3 _fragPos){
 	vec3 _lightDir = normalize(_fragPos - _light.m_pos);
 	// ambient light intensity
-	vec3 _ambient = _light.m_ambient * vec3(texture(myMaterial.m_diffuse, outUV));
+	vec3 _ambient = _light.m_ambient * getDiffuseColor();
 	// diffuse light intensity
 	float _diff  = max(dot(_normal, -_lightDir), 0.0f);
-	vec3 _diffuse = _diff * _light.m_diffuse * vec3(texture(myMaterial.m_diffuse, outUV));
+	vec3 _diffuse = _diff * _light.m_diffuse * getDiffuseColor();
 	// specular light intensity
 	vec3 _reflectDir = reflect(_lightDir, _normal);
 	float _spec = pow(max(dot(_viewDir, _reflectDir), 0.0f), myMaterial.m_shiness);
