@@ -51,18 +51,18 @@ Ray initRay(vec3 pos, vec3 dir) {
     Ray ray;
     ray.x = pos.x; ray.y = pos.y; ray.z = pos.z;
     ray.r = max(length(pos), 1.0);
-    ray.theta = acos(clamp(pos.z / ray.r, -0.999999, 0.999999));
-    ray.phi = atan(pos.y, pos.x);
+    ray.theta = acos(clamp(pos.y / ray.r, -0.999999, 0.999999));
+    ray.phi = atan(pos.z, pos.x);
 
     float dx = dir.x, dy = dir.y, dz = dir.z;
     float sinTheta = max(abs(sin(ray.theta)), 1e-4);
-    ray.dr     = sin(ray.theta)*cos(ray.phi)*dx + sin(ray.theta)*sin(ray.phi)*dy + cos(ray.theta)*dz;
-    ray.dtheta = (cos(ray.theta)*cos(ray.phi)*dx + cos(ray.theta)*sin(ray.phi)*dy - sin(ray.theta)*dz) / ray.r;
-    ray.dphi   = (-sin(ray.phi)*dx + cos(ray.phi)*dy) / (ray.r * sinTheta);
+    ray.dr     = sin(ray.theta)*cos(ray.phi)*dx + cos(ray.theta)*dy + sin(ray.theta)*sin(ray.phi)*dz;
+    ray.dtheta = (cos(ray.theta)*cos(ray.phi)*dx - sin(ray.theta)*dy + cos(ray.theta)*sin(ray.phi)*dz) / ray.r;
+    ray.dphi   = (-sin(ray.phi)*dx + cos(ray.phi)*dz) / (ray.r * sinTheta);
 
-    ray.L = ray.r * ray.r * sin(ray.theta) * ray.dphi;
+    ray.L = ray.r * ray.r * sinTheta * ray.dphi;
     float f = 1.0 - SagA_rs / ray.r;
-    float dt_dL = sqrt((ray.dr*ray.dr)/f + ray.r*ray.r*(ray.dtheta*ray.dtheta + sin(ray.theta)*sin(ray.theta)*ray.dphi*ray.dphi));
+    float dt_dL = sqrt((ray.dr*ray.dr)/f + ray.r*ray.r*(ray.dtheta*ray.dtheta + sinTheta*sinTheta*ray.dphi*ray.dphi));
     ray.E = f * dt_dL;
 
     return ray;
@@ -121,13 +121,14 @@ void geodesicRHS(Ray ray, out vec3 d1, out vec3 d2) {
     float dr = ray.dr, dtheta = ray.dtheta, dphi = ray.dphi;
     float f = 1.0 - SagA_rs / r;
     float dt_dL = ray.E / f;
+    float sinTheta = max(sin(theta), 1e-4);
 
     d1 = vec3(dr, dtheta, dphi);
     d2.x = - (SagA_rs / (2.0 * r*r)) * f * dt_dL * dt_dL
          + (SagA_rs / (2.0 * r*r * f)) * dr * dr
-         + r * (dtheta*dtheta + sin(theta)*sin(theta)*dphi*dphi);
+         + r * (dtheta*dtheta + sinTheta*sinTheta*dphi*dphi);
     d2.y = -2.0*dr*dtheta/r + sin(theta)*cos(theta)*dphi*dphi;
-    d2.z = -2.0*dr*dphi/r - 2.0*cos(theta)/(sin(theta)) * dtheta * dphi;
+    d2.z = -2.0*dr*dphi/r - 2.0*cos(theta)/sinTheta * dtheta * dphi;
 }
 void rk4Step(inout Ray ray, float dL) {
     vec3 k1a, k1b;
@@ -141,8 +142,8 @@ void rk4Step(inout Ray ray, float dL) {
     ray.dphi   += dL * k1b.z;
 
     ray.x = ray.r * sin(ray.theta) * cos(ray.phi);
-    ray.y = ray.r * sin(ray.theta) * sin(ray.phi);
-    ray.z = ray.r * cos(ray.theta);
+    ray.y = ray.r * cos(ray.theta);
+    ray.z = ray.r * sin(ray.theta) * sin(ray.phi);
 }
 bool crossesEquatorialPlane(vec3 oldPos, vec3 newPos) {
     bool crossed = (oldPos.y * newPos.y < 0.0);

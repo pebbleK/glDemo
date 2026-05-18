@@ -24,8 +24,8 @@ void rend() {
 	glEnable(GL_DEPTH_TEST);
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glm::vec3 modelPositions = glm::vec3(0.5f, 0.5f, 0.5f);
-    glm::vec3 pointLightPositions = glm::vec3(0.7f, 0.2f, 2.0f);
+    glm::vec3 modelPositions = glm::vec3(0.5f, 2.5f, 0.5f);
+    glm::vec3 pointLightPositions = glm::vec3(0.7f, 2.2f, 2.0f);
 	_camera.update();
 	_projMatrix = glm::perspective(glm::radians(45.0f), (float)_width / (float)_height, 0.1f, 100.0f);
 	glm::mat4 _modelMatrix(1.0f);
@@ -231,7 +231,7 @@ int main() {
     glfwSetCursorPosCallback(window, mouse_callback);
 
 	// Camera initialization
-	_camera.lookAt(glm::vec3(0.0f, 0.0f, 3.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	_camera.lookAt(glm::vec3(0.0f, 2.0f, 3.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 	_camera.setSpeed(0.01f); // Set movement speed
 	_camera.setSensitivity(0.05f); // Set mouse sensitivity
 

@@ -339,8 +339,8 @@ void BlackHoleRenderer::uploadLensObjectsUBO() {
 	LensObjectsUBOData data = {};
 	data.numObjects = 2;
 
-	float orbitA = 30.0f;
-	float orbitB = 30.0f;
+	float orbitA = 50.0f;
+	float orbitB = 50.0f;
 	float angleA = time * 0.35f;
 	float angleB = time * 0.22f + 3.1415926f;
 
