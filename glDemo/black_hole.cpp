@@ -29,12 +29,12 @@ struct Ray;
 bool Gravity = false;
 
 struct Camera {
-    // Center the camera orbit on the black hole at (0, 0, 0)
-    vec3 target = vec3(0.0f, 0.0f, 0.0f); // Always look at the black hole center
+    vec3 eye = vec3(0.0f, 0.0f, 6.34194e10f);
+    vec3 target = vec3(0.0f, 0.0f, 0.0f);
     float radius = 6.34194e10f;
     float minRadius = 1e10f, maxRadius = 1e12f;
 
-    float azimuth = 0.0f;
+    float azimuth = -M_PI / 2.0f;
     float elevation = M_PI / 2.0f;
 
     float orbitSpeed = 0.01f;
@@ -46,19 +46,21 @@ struct Camera {
     bool moving = false; // For compute shader optimization
     double lastX = 0.0, lastY = 0.0;
 
+    vec3 direction() const {
+        float clampedElevation = glm::clamp(elevation, 0.01f, float(M_PI) - 0.01f);
+        return normalize(vec3(
+            sin(clampedElevation) * cos(azimuth),
+            cos(clampedElevation),
+            sin(clampedElevation) * sin(azimuth)
+        ));
+    }
+
     // Calculate camera position in world space
     vec3 position() const {
-        float clampedElevation = glm::clamp(elevation, 0.01f, float(M_PI) - 0.01f);
-        // Orbit around (0,0,0) always
-        return vec3(
-            radius * sin(clampedElevation) * cos(azimuth),
-            radius * cos(clampedElevation),
-            radius * sin(clampedElevation) * sin(azimuth)
-        );
+        return eye;
     }
     void update() {
-        // Always keep target at black hole center
-        target = vec3(0.0f, 0.0f, 0.0f);
+        target = eye + direction();
         if(dragging | panning) {
             moving = true;
         } else { 
@@ -89,7 +91,6 @@ struct Camera {
         if (button == GLFW_MOUSE_BUTTON_LEFT || button == GLFW_MOUSE_BUTTON_MIDDLE) {
             if (action == GLFW_PRESS) {
                 dragging = true;
-                // Disable panning so camera always orbits center
                 panning = false;
                 glfwGetCursorPos(win, &lastX, &lastY);
             } else if (action == GLFW_RELEASE) {
@@ -106,14 +107,27 @@ struct Camera {
         }
     }
     void processScroll(double xoffset, double yoffset) {
-        radius -= yoffset * zoomSpeed;
-        radius = glm::clamp(radius, minRadius, maxRadius);
+        eye += direction() * static_cast<float>(yoffset * zoomSpeed);
+        radius = length(eye);
         update();
     }
     void processKey(int key, int scancode, int action, int mods) {
         if (action == GLFW_PRESS && key == GLFW_KEY_G) {
             Gravity = !Gravity;
             cout << "[INFO] Gravity turned " << (Gravity ? "ON" : "OFF") << endl;
+        }
+        if (action == GLFW_PRESS || action == GLFW_REPEAT) {
+            const float step = 2.0e9f;
+            vec3 fwd = direction();
+            vec3 right = normalize(cross(fwd, vec3(0.0f, 1.0f, 0.0f)));
+            if (key == GLFW_KEY_W) eye += fwd * step;
+            if (key == GLFW_KEY_S) eye -= fwd * step;
+            if (key == GLFW_KEY_D) eye += right * step;
+            if (key == GLFW_KEY_A) eye -= right * step;
+            if (key == GLFW_KEY_SPACE) eye += vec3(0.0f, 1.0f, 0.0f) * step;
+            if (key == GLFW_KEY_LEFT_CONTROL) eye -= vec3(0.0f, 1.0f, 0.0f) * step;
+            radius = length(eye);
+            update();
         }
     }
 };
@@ -150,6 +164,7 @@ vector<ObjectData> objects = {
 
 struct Engine {
     GLuint gridShaderProgram;
+    GLuint foregroundShaderProgram;
     // -- Quad & Texture render -- //
     GLFWwindow* window;
     GLuint quadVAO;
@@ -160,11 +175,18 @@ struct Engine {
     GLuint cameraUBO = 0;
     GLuint diskUBO = 0;
     GLuint objectsUBO = 0;
+    GLuint blackHoleUBO = 0;
     // -- grid mess vars -- //
     GLuint gridVAO = 0;
     GLuint gridVBO = 0;
     GLuint gridEBO = 0;
     int gridIndexCount = 0;
+    GLuint cubeVAO = 0;
+    GLuint cubeVBO = 0;
+    GLuint sphereVAO = 0;
+    GLuint sphereVBO = 0;
+    GLuint sphereEBO = 0;
+    int sphereIndexCount = 0;
 
     int WIDTH = 800;  // Window width
     int HEIGHT = 600; // Window height
@@ -200,6 +222,7 @@ struct Engine {
         cout << "OpenGL " << glGetString(GL_VERSION) << "\n";
         this->shaderProgram = CreateShaderProgram();
         gridShaderProgram = CreateShaderProgram("grid.vert", "grid.frag");
+        foregroundShaderProgram = CreateForegroundShaderProgram();
 
         computeProgram = CreateComputeProgram("geodesic.comp");
         glGenBuffers(1, &cameraUBO);
@@ -222,9 +245,16 @@ struct Engine {
         glBufferData(GL_UNIFORM_BUFFER, objUBOSize, nullptr, GL_DYNAMIC_DRAW);
         glBindBufferBase(GL_UNIFORM_BUFFER, 3, objectsUBO);  // binding = 3 matches shader
 
+        glGenBuffers(1, &blackHoleUBO);
+        glBindBuffer(GL_UNIFORM_BUFFER, blackHoleUBO);
+        glBufferData(GL_UNIFORM_BUFFER, sizeof(float) * 4, nullptr, GL_DYNAMIC_DRAW);
+        glBindBufferBase(GL_UNIFORM_BUFFER, 4, blackHoleUBO);  // binding = 4 matches shader
+
         auto result = QuadVAO();
         this->quadVAO = result[0];
         this->texture = result[1];
+
+        initForegroundMeshes();
     }
     void generateGrid(const vector<ObjectData>& objects) {
         const int gridSize = 25;
@@ -321,7 +351,7 @@ struct Engine {
         glUniform1i(glGetUniformLocation(shaderProgram, "screenTexture"), 0); // 0锚点的纹理
 
         glDisable(GL_DEPTH_TEST);  // draw as background
-        glDrawArrays(GL_TRIANGLE_STRIP, 0, 6);  // 2 triangles
+        glDrawArrays(GL_TRIANGLES, 0, 6);  // 2 triangles
         glEnable(GL_DEPTH_TEST);
     }
     GLuint CreateShaderProgram(){
@@ -417,6 +447,59 @@ struct Engine {
 
         return program;
     }
+    GLuint CreateForegroundShaderProgram(){
+        const char* vertexShaderSource = R"(
+        #version 330 core
+        layout (location = 0) in vec3 aPos;
+        layout (location = 1) in vec3 aNormal;
+        out vec3 FragPos;
+        out vec3 Normal;
+        uniform mat4 model;
+        uniform mat4 view;
+        uniform mat4 proj;
+        void main() {
+            vec4 worldPos = model * vec4(aPos, 1.0);
+            FragPos = worldPos.xyz;
+            Normal = mat3(transpose(inverse(model))) * aNormal;
+            gl_Position = proj * view * worldPos;
+        })";
+
+        const char* fragmentShaderSource = R"(
+        #version 330 core
+        in vec3 FragPos;
+        in vec3 Normal;
+        out vec4 FragColor;
+        uniform vec3 baseColor;
+        uniform vec3 viewPos;
+        void main() {
+            vec3 n = normalize(Normal);
+            vec3 lightDir = normalize(vec3(-0.4, 0.7, 0.5));
+            vec3 viewDir = normalize(viewPos - FragPos);
+            float diff = max(dot(n, lightDir), 0.0);
+            vec3 halfDir = normalize(lightDir + viewDir);
+            float spec = pow(max(dot(n, halfDir), 0.0), 32.0);
+            vec3 color = baseColor * (0.18 + 0.82 * diff) + vec3(0.25) * spec;
+            FragColor = vec4(color, 1.0);
+        })";
+
+        GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
+        glShaderSource(vertexShader, 1, &vertexShaderSource, nullptr);
+        glCompileShader(vertexShader);
+
+        GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+        glShaderSource(fragmentShader, 1, &fragmentShaderSource, nullptr);
+        glCompileShader(fragmentShader);
+
+        GLuint program = glCreateProgram();
+        glAttachShader(program, vertexShader);
+        glAttachShader(program, fragmentShader);
+        glLinkProgram(program);
+
+        glDeleteShader(vertexShader);
+        glDeleteShader(fragmentShader);
+
+        return program;
+    }
     GLuint CreateComputeProgram(const char* path) {
         // 1) read GLSL source
         std::ifstream in(path);
@@ -481,7 +564,7 @@ struct Engine {
         glUseProgram(computeProgram);
         uploadCameraUBO(cam);
         uploadDiskUBO();
-        uploadObjectsUBO(objects);
+        uploadBlackHoleUBO();
 
         // 3) bind it as image unit 0
         glBindImageTexture(0, texture, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
@@ -492,7 +575,7 @@ struct Engine {
         glDispatchCompute(groupsX, groupsY, 1);
 
         // 5) sync
-        glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+        glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_TEXTURE_FETCH_BARRIER_BIT);
     }
     void uploadCameraUBO(const Camera& cam) {
         struct UBOData {
@@ -509,6 +592,7 @@ struct Engine {
         vec3 up = vec3(0, 1, 0); // y axis is up, so disk is in x-z plane
         vec3 right = normalize(cross(fwd, up));
         up = cross(right, fwd);
+        up = normalize(up);
 
         data.pos = cam.position();
         data.right = right;
@@ -553,6 +637,116 @@ struct Engine {
 
         glBindBuffer(GL_UNIFORM_BUFFER, diskUBO);
         glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(diskData), diskData);
+    }
+    void uploadBlackHoleUBO() {
+        float data[4] = { SagA.position.x, SagA.position.y, SagA.position.z, 0.0f };
+        glBindBuffer(GL_UNIFORM_BUFFER, blackHoleUBO);
+        glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(data), data);
+    }
+    void initForegroundMeshes() {
+        float cubeVertices[] = {
+            -1,-1,-1,  0, 0,-1,   1,-1,-1,  0, 0,-1,   1, 1,-1,  0, 0,-1,
+             1, 1,-1,  0, 0,-1,  -1, 1,-1,  0, 0,-1,  -1,-1,-1,  0, 0,-1,
+            -1,-1, 1,  0, 0, 1,   1, 1, 1,  0, 0, 1,   1,-1, 1,  0, 0, 1,
+             1, 1, 1,  0, 0, 1,  -1,-1, 1,  0, 0, 1,  -1, 1, 1,  0, 0, 1,
+            -1, 1, 1, -1, 0, 0,  -1,-1, 1, -1, 0, 0,  -1,-1,-1, -1, 0, 0,
+            -1,-1,-1, -1, 0, 0,  -1, 1,-1, -1, 0, 0,  -1, 1, 1, -1, 0, 0,
+             1, 1, 1,  1, 0, 0,   1,-1,-1,  1, 0, 0,   1,-1, 1,  1, 0, 0,
+             1,-1,-1,  1, 0, 0,   1, 1, 1,  1, 0, 0,   1, 1,-1,  1, 0, 0,
+            -1,-1,-1,  0,-1, 0,   1,-1,-1,  0,-1, 0,   1,-1, 1,  0,-1, 0,
+             1,-1, 1,  0,-1, 0,  -1,-1, 1,  0,-1, 0,  -1,-1,-1,  0,-1, 0,
+            -1, 1,-1,  0, 1, 0,   1, 1, 1,  0, 1, 0,   1, 1,-1,  0, 1, 0,
+             1, 1, 1,  0, 1, 0,  -1, 1,-1,  0, 1, 0,  -1, 1, 1,  0, 1, 0,
+        };
+
+        glGenVertexArrays(1, &cubeVAO);
+        glGenBuffers(1, &cubeVBO);
+        glBindVertexArray(cubeVAO);
+        glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertices), cubeVertices, GL_STATIC_DRAW);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+        glBindVertexArray(0);
+
+        const int stacks = 24;
+        const int sectors = 48;
+        vector<float> sphereVertices;
+        vector<GLuint> sphereIndices;
+        for (int i = 0; i <= stacks; ++i) {
+            float stackAngle = float(M_PI) * 0.5f - float(i) * float(M_PI) / stacks;
+            float xy = cos(stackAngle);
+            float y = sin(stackAngle);
+            for (int j = 0; j <= sectors; ++j) {
+                float sectorAngle = float(j) * 2.0f * float(M_PI) / sectors;
+                float x = xy * cos(sectorAngle);
+                float z = xy * sin(sectorAngle);
+                sphereVertices.push_back(x);
+                sphereVertices.push_back(y);
+                sphereVertices.push_back(z);
+                sphereVertices.push_back(x);
+                sphereVertices.push_back(y);
+                sphereVertices.push_back(z);
+            }
+        }
+
+        for (int i = 0; i < stacks; ++i) {
+            int k1 = i * (sectors + 1);
+            int k2 = k1 + sectors + 1;
+            for (int j = 0; j < sectors; ++j, ++k1, ++k2) {
+                if (i != 0) {
+                    sphereIndices.push_back(k1);
+                    sphereIndices.push_back(k2);
+                    sphereIndices.push_back(k1 + 1);
+                }
+                if (i != stacks - 1) {
+                    sphereIndices.push_back(k1 + 1);
+                    sphereIndices.push_back(k2);
+                    sphereIndices.push_back(k2 + 1);
+                }
+            }
+        }
+
+        sphereIndexCount = static_cast<int>(sphereIndices.size());
+        glGenVertexArrays(1, &sphereVAO);
+        glGenBuffers(1, &sphereVBO);
+        glGenBuffers(1, &sphereEBO);
+        glBindVertexArray(sphereVAO);
+        glBindBuffer(GL_ARRAY_BUFFER, sphereVBO);
+        glBufferData(GL_ARRAY_BUFFER, sphereVertices.size() * sizeof(float), sphereVertices.data(), GL_STATIC_DRAW);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, sphereEBO);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sphereIndices.size() * sizeof(GLuint), sphereIndices.data(), GL_STATIC_DRAW);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+        glBindVertexArray(0);
+    }
+    void drawForegroundObjects(const Camera& cam, const mat4& view, const mat4& proj) {
+        glUseProgram(foregroundShaderProgram);
+        glUniformMatrix4fv(glGetUniformLocation(foregroundShaderProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));
+        glUniformMatrix4fv(glGetUniformLocation(foregroundShaderProgram, "proj"), 1, GL_FALSE, glm::value_ptr(proj));
+        glUniform3fv(glGetUniformLocation(foregroundShaderProgram, "viewPos"), 1, glm::value_ptr(cam.position()));
+
+        mat4 model = mat4(1.0f);
+        model = translate(model, vec3(-1.2e10f, -2.0e9f, 3.0e10f));
+        model = scale(model, vec3(4.0e9f));
+        glUniformMatrix4fv(glGetUniformLocation(foregroundShaderProgram, "model"), 1, GL_FALSE, glm::value_ptr(model));
+        glUniform3f(glGetUniformLocation(foregroundShaderProgram, "baseColor"), 0.25f, 0.55f, 1.0f);
+        glBindVertexArray(sphereVAO);
+        glDrawElements(GL_TRIANGLES, sphereIndexCount, GL_UNSIGNED_INT, 0);
+
+        model = mat4(1.0f);
+        model = translate(model, vec3(1.0e10f, 2.0e9f, 2.4e10f));
+        model = rotate(model, radians(28.0f), vec3(0.4f, 1.0f, 0.2f));
+        model = scale(model, vec3(3.0e9f));
+        glUniformMatrix4fv(glGetUniformLocation(foregroundShaderProgram, "model"), 1, GL_FALSE, glm::value_ptr(model));
+        glUniform3f(glGetUniformLocation(foregroundShaderProgram, "baseColor"), 0.85f, 0.78f, 0.52f);
+        glBindVertexArray(cubeVAO);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+
+        glBindVertexArray(0);
     }
     
     vector<GLuint> QuadVAO(){
@@ -639,6 +833,7 @@ void setupCameraCallbacks(GLFWwindow* window) {
 // -- MAIN -- //
 int main() {
     setupCameraCallbacks(engine.window);
+    camera.update();
     vector<unsigned char> pixels(engine.WIDTH * engine.HEIGHT * 3);
 
     auto t0 = Clock::now();
@@ -690,14 +885,21 @@ int main() {
         engine.generateGrid(objects);
         // 5) overlay the bent grid
         mat4 view = lookAt(camera.position(), camera.target, vec3(0,1,0));
-        mat4 proj = perspective(radians(60.0f), float(engine.COMPUTE_WIDTH)/engine.COMPUTE_HEIGHT, 1e9f, 1e14f);
+        mat4 proj = perspective(radians(60.0f), float(engine.WIDTH)/engine.HEIGHT, 1e9f, 1e14f);
         mat4 viewProj = proj * view;
-        engine.drawGrid(viewProj);
 
         // ---------- RUN RAYTRACER ------------- //
         glViewport(0, 0, engine.WIDTH, engine.HEIGHT);
         engine.dispatchCompute(camera);
         engine.drawFullScreenQuad();
+
+        // ---------- FOREGROUND ------------- //
+        glEnable(GL_DEPTH_TEST);
+        glClear(GL_DEPTH_BUFFER_BIT);
+        engine.drawForegroundObjects(camera, view, proj);
+
+        // ---------- GRID ------------- //
+        engine.drawGrid(viewProj);
 
         // 6) present to screen
         glfwSwapBuffers(engine.window);

@@ -2,7 +2,7 @@
 
 void Camera::lookAt(glm::vec3 _position, glm::vec3 _front, glm::vec3 _up) {
 	m_position = _position;
-	m_front = glm::normalize(_front); //传进来的方向，使其单位向量化
+	m_front = glm::normalize(_front); // normalize input direction
 	m_up = _up;
 
 	m_vMatrix = glm::lookAt(m_position, m_position + m_front, m_up);
@@ -34,7 +34,7 @@ void Camera::move(CAMERA_MOVE _mode) {
 		m_position += m_speed * glm::normalize(glm::cross(m_front, m_up));
 		break;
 	case CAMERA_MOVE::MOVE_FRONT:
-		m_position += m_speed * m_front; //m_front做了归一化
+		m_position += m_speed * m_front; // m_front is normalized
 		break;
 	case CAMERA_MOVE::MOVE_BACK:
 		m_position -= m_speed * m_front;
@@ -50,8 +50,8 @@ void Camera::move(CAMERA_MOVE _mode) {
 	}
 }
 
-// pitch:上下移动视角,yz平面，yaw:左右移动视角,xz平面
-//修改摄像机方向就是修改m_front单位向量
+// pitch: vertical view rotation, yaw: horizontal view rotation
+// Camera direction is controlled by m_front.
 void Camera::pitch(float yOffset) {
 	m_pitch += yOffset * m_sensitivity;
 
@@ -90,7 +90,7 @@ void Camera::onMouseMove(double _xpos, double _ypos) {
 	}
 
 	float _xOffset = _xpos - m_xpos;
-	float _yOffset = -(_ypos - m_ypos); //window窗体坐标是左上角为原点，y轴向下，所以这里要取反
+	float _yOffset = -(_ypos - m_ypos); // Window y-axis points downward.
 
 	m_xpos = _xpos;
 	m_ypos = _ypos;

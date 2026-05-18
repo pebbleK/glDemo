@@ -33,12 +33,12 @@
     <ClInclude Include="IO.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="BlackHoleBackground.h">
+    <ClInclude Include="BlackHoleRenderer.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="BlackHoleBackground.cpp">
+    <ClCompile Include="BlackHoleRenderer.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="Camera.cpp">
@@ -58,9 +58,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="black_hole.cpp">
-      <Filter>资源文件</Filter>
-    </None>
     <None Include="shader\colorShaderf.glsl">
       <Filter>资源文件</Filter>
     </None>

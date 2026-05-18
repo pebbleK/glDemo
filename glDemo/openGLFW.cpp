@@ -2,7 +2,7 @@
 #include "Shader.h"
 #include "Camera.h"
 #include "IO.h"
-#include "BlackHoleBackground.h"
+#include "BlackHoleRenderer.h"
 
 uint VAO_sun = 0;
 
@@ -12,26 +12,28 @@ Shader _shader_sun;
 Shader _shader_scene;
 
 FF::ffModel* _model;
-BlackHoleBackground _blackHoleBackground;
 
 Camera _camera;
+BlackHoleRenderer _blackHoleRenderer;
 glm::mat4 _projMatrix(1.0f);
 int _width = 800;
 int _height = 600;
+glm::vec3 _blackHolePosition(0.0f, 0.0f, -18.0f);
 
 void rend() {
-    glEnable(GL_DEPTH_TEST);
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glEnable(GL_DEPTH_TEST);
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glm::vec3 modelPositions = glm::vec3(0.5f, 0.5f, 0.5f);
     glm::vec3 pointLightPositions = glm::vec3(0.7f, 0.2f, 2.0f);
-    _camera.update();
-    _projMatrix = glm::perspective(glm::radians(45.0f), (float)_width / (float)_height, 0.1f, 100.0f);
-    glm::mat4 _modelMatrix(1.0f);
+	_camera.update();
+	_projMatrix = glm::perspective(glm::radians(45.0f), (float)_width / (float)_height, 0.1f, 100.0f);
+	glm::mat4 _modelMatrix(1.0f);
 
-    _blackHoleBackground.render(_camera);
+	_blackHoleRenderer.renderBackground(_camera, _blackHolePosition);
+	glClear(GL_DEPTH_BUFFER_BIT);
 
-    // Object rendering
+	// Object rendering
     _shader_scene.start();
     _shader_scene.setVec3("view_pos", _camera.getPosition());
     _shader_scene.setMatrix("_viewMatrix", _camera.getMatrix());
@@ -69,16 +71,13 @@ void rend() {
     _model->draw(_shader_scene);
     _shader_scene.end();
 
-    // Light source
-    _shader_sun.start();
-    _shader_sun.setMatrix("_modelMatrix", _modelMatrix);
-    _shader_sun.setMatrix("_viewMatrix", _camera.getMatrix());
-    _shader_sun.setMatrix("_projMatrix", _projMatrix);
-    _modelMatrix = glm::mat4(1.0f);
-    _shader_sun.setMatrix("_modelMatrix", _modelMatrix);
-    _modelMatrix = glm::mat4(1.0f);
-    _modelMatrix = glm::translate(_modelMatrix, pointLightPositions);
-    _modelMatrix = glm::scale(_modelMatrix, glm::vec3(0.2f));
+	// Light source
+	_shader_sun.start();
+	_shader_sun.setMatrix("_viewMatrix", _camera.getMatrix());
+	_shader_sun.setMatrix("_projMatrix", _projMatrix);
+	_modelMatrix = glm::mat4(1.0f);
+	_modelMatrix = glm::translate(_modelMatrix, pointLightPositions);
+	_modelMatrix = glm::scale(_modelMatrix, glm::vec3(0.2f));
     _shader_sun.setMatrix("_modelMatrix", _modelMatrix);
     glBindVertexArray(VAO_sun);
     glDrawArrays(GL_TRIANGLES, 0, 36);
@@ -166,7 +165,7 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
 	_width = width;
 	_height = height;
 	glViewport(0, 0, width, height);
-	_blackHoleBackground.resize(width, height);
+	_blackHoleRenderer.resize(width, height);
 }
 
 //keyboard input
@@ -205,10 +204,10 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
 }
 
 int main() {
-    glfwInit(); // Get context
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3); // Compute shader background requires OpenGL 4.3
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); // Select OpenGL configuration mode
+	glfwInit(); // Get context
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3); // Compute shader needs OpenGL 4.3.
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); // Select OpenGL configuration mode
 
     GLFWwindow* window = glfwCreateWindow(_width, _height, "OpenGL Core", NULL, NULL);
     if (window == NULL) {
@@ -224,29 +223,30 @@ int main() {
         return -1;
     }
 
-    if (!_blackHoleBackground.init(_width, _height)) {
-        std::cout << "Failed to initialize black hole background" << std::endl;
-        return -1;
-    }
-
-    glViewport(0, 0, _width, _height); // Viewport rendering size, can be used for minimap
-    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+	glViewport(0, 0, _width, _height); // Viewport rendering size, can be used for minimap
+	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
     // Mouse movement
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED); // Hide cursor and provide unlimited movement
     glfwSetCursorPosCallback(window, mouse_callback);
 
-    // Camera initialization
-    _camera.lookAt(glm::vec3(0.0f, 0.0f, 3.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-    _camera.setSpeed(0.001f); // Set movement speed
-    _camera.setSensitivity(0.05f); // Set mouse sensitivity
+	// Camera initialization
+	_camera.lookAt(glm::vec3(0.0f, 0.0f, 3.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	_camera.setSpeed(0.01f); // Set movement speed
+	_camera.setSensitivity(0.05f); // Set mouse sensitivity
 
     VAO_sun = creatLightModel();
     light_color = glm::vec3(1.0f, 1.0f, 1.0f); // Light color
 
-    _model = new FF::ffModel("res/model/ball.obj");
+	_model = new FF::ffModel("res/model/ball.obj");
 
-    initShader("", "");
+	initShader("", "");
+	if (!_blackHoleRenderer.init(_width, _height, 200, 150)) {
+		std::cout << "Failed to initialize black hole renderer" << std::endl;
+		glfwDestroyWindow(window);
+		glfwTerminate();
+		return -1;
+	}
 
     while (!glfwWindowShouldClose(window)) {
         processInput(window);

@@ -9,7 +9,7 @@ layout(std140, binding = 1) uniform Camera {
     vec3 camForward; float _pad3;
     float tanHalfFov;
     float aspect;
-    bool moving;
+    int moving;
     int   _pad4;
 } cam;
 
@@ -20,21 +20,16 @@ layout(std140, binding = 2) uniform Disk {
     float thickness;
 };
 
-layout(std140, binding = 3) uniform Objects {
-    int numObjects;
-    vec4 objPosRadius[16];
-    vec4 objColor[16];
-    float  mass[16]; 
+layout(std140, binding = 4) uniform BlackHole {
+    vec3 worldPos;
+    float _padBH0;
 };
+
+uniform ivec2 uResolution;
 
 const float SagA_rs = 1.269e10;
 const float D_LAMBDA = 1e7;
-const double ESCAPE_R = 1e30;
-
-// Globals to store hit info
-vec4 objectColor = vec4(0.0);
-vec3 hitCenter = vec3(0.0);
-float hitRadius = 0.0;
+const float ESCAPE_R = 1e30;
 
 struct Ray {
     float x, y, z, r, theta, phi;
@@ -44,14 +39,15 @@ struct Ray {
 Ray initRay(vec3 pos, vec3 dir) {
     Ray ray;
     ray.x = pos.x; ray.y = pos.y; ray.z = pos.z;
-    ray.r = length(pos);
-    ray.theta = acos(pos.z / ray.r);
+    ray.r = max(length(pos), 1.0);
+    ray.theta = acos(clamp(pos.z / ray.r, -0.999999, 0.999999));
     ray.phi = atan(pos.y, pos.x);
 
     float dx = dir.x, dy = dir.y, dz = dir.z;
+    float sinTheta = max(abs(sin(ray.theta)), 1e-4);
     ray.dr     = sin(ray.theta)*cos(ray.phi)*dx + sin(ray.theta)*sin(ray.phi)*dy + cos(ray.theta)*dz;
     ray.dtheta = (cos(ray.theta)*cos(ray.phi)*dx + cos(ray.theta)*sin(ray.phi)*dy - sin(ray.theta)*dz) / ray.r;
-    ray.dphi   = (-sin(ray.phi)*dx + cos(ray.phi)*dy) / (ray.r * sin(ray.theta));
+    ray.dphi   = (-sin(ray.phi)*dx + cos(ray.phi)*dy) / (ray.r * sinTheta);
 
     ray.L = ray.r * ray.r * sin(ray.theta) * ray.dphi;
     float f = 1.0 - SagA_rs / ray.r;
@@ -61,25 +57,19 @@ Ray initRay(vec3 pos, vec3 dir) {
     return ray;
 }
 
+vec3 backgroundColor(vec3 dir) {
+    float t = 0.5 * (dir.y + 1.0);
+    vec3 sky = mix(vec3(0.01, 0.012, 0.025), vec3(0.025, 0.035, 0.08), t);
+
+    vec3 cell = floor(dir * 120.0);
+    float n = fract(sin(dot(cell, vec3(12.9898, 78.233, 37.719))) * 43758.5453);
+    float star = step(0.9965, n);
+    return sky + vec3(star);
+}
+
 bool intercept(Ray ray, float rs) {
     return ray.r <= rs;
 }
-// Returns true on hit, captures center, radius, and base color
-bool interceptObject(Ray ray) {
-    vec3 P = vec3(ray.x, ray.y, ray.z);
-    for (int i = 0; i < numObjects; ++i) {
-        vec3 center = objPosRadius[i].xyz;
-        float radius = objPosRadius[i].w;
-        if (distance(P, center) <= radius) {
-            objectColor = objColor[i];
-            hitCenter = center;
-            hitRadius = radius;
-            return true;
-        }
-    }
-    return false;
-}
-
 void geodesicRHS(Ray ray, out vec3 d1, out vec3 d2) {
     float r = ray.r, theta = ray.theta;
     float dr = ray.dr, dtheta = ray.dtheta, dphi = ray.dphi;
@@ -115,26 +105,29 @@ bool crossesEquatorialPlane(vec3 oldPos, vec3 newPos) {
 }
 
 void main() {
-    int WIDTH  = cam.moving ? 200 : 200;
-    int HEIGHT = cam.moving ? 150 : 150;
+    int WIDTH = uResolution.x;
+    int HEIGHT = uResolution.y;
 
     ivec2 pix = ivec2(gl_GlobalInvocationID.xy);
     if (pix.x >= WIDTH || pix.y >= HEIGHT) return;
     /*
     GLuint groupsX = (GLuint)std::ceil(cw /
-    16.0f);  // 200/16 = 12.5 ¡ú 13×é
+    16.0f);  // 200/16 = 12.5 ï¿½ï¿½ 13ï¿½ï¿½
     GLuint groupsY = (GLuint)std::ceil(ch /
-    16.0f);  // 150/16 = 9.375 ¡ú 10×é
-    - Êµ¼Ê´´½¨£º13¡Á10¡Á16¡Á16 = 33280¸öÏß³Ì
-    - Êµ¼ÊÐèÒª£º200¡Á150 = 30000¸öÏñËØ
-    - ¶à³ö3280¸öÏß³ÌÐèÒª±»²ÃÇÐ
+    16.0f);  // 150/16 = 9.375 ï¿½ï¿½ 10ï¿½ï¿½
+    - Êµï¿½Ê´ï¿½ï¿½ï¿½ï¿½ï¿½13ï¿½ï¿½10ï¿½ï¿½16ï¿½ï¿½16 = 33280ï¿½ï¿½ï¿½ß³ï¿½
+    - Êµï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½200ï¿½ï¿½150 = 30000ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+    - ï¿½ï¿½ï¿½3280ï¿½ï¿½ï¿½ß³ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     */
 
     // Init Ray
     float u = (2.0 * (pix.x + 0.5) / WIDTH - 1.0) * cam.aspect * cam.tanHalfFov;
     float v = (1.0 - 2.0 * (pix.y + 0.5) / HEIGHT) * cam.tanHalfFov;
     vec3 dir = normalize(u * cam.camRight - v * cam.camUp + cam.camForward);
-    Ray ray = initRay(cam.camPos, dir);
+    // Integrate in black-hole local space. cam.camPos is world-space, while
+    // the Schwarzschild equations assume the black hole is at the origin.
+    Ray ray = initRay(cam.camPos - worldPos, dir);
+    vec3 initialDir = dir;
 
     vec4 color = vec4(0.0);
     vec3 prevPos = vec3(ray.x, ray.y, ray.z);
@@ -142,9 +135,7 @@ void main() {
 
     bool hitBlackHole = false;
     bool hitDisk      = false;
-    bool hitObject    = false;
-
-    int steps = cam.moving ? 60000 : 60000;
+    int steps = cam.moving != 0 ? 60000 : 60000;
 
     for (int i = 0; i < steps; ++i) {
         if (intercept(ray, SagA_rs)) { hitBlackHole = true; break; }
@@ -153,13 +144,12 @@ void main() {
 
         vec3 newPos = vec3(ray.x, ray.y, ray.z);
         if (crossesEquatorialPlane(prevPos, newPos)) { hitDisk = true; break; }
-        if (interceptObject(ray)) { hitObject = true; break; }
         prevPos = newPos;
         if (ray.r > ESCAPE_R) break;
     }
 
     if (hitDisk) {
-        double r = length(vec3(ray.x, ray.y, ray.z)) / disk_r2;
+        float r = length(vec3(ray.x, ray.y, ray.z)) / disk_r2;
         vec3 diskColor = vec3(1.0, r, 0.2);
         //r = 1.0 - abs(r - 0.5) * 2.0;
         color = vec4(diskColor, r);
@@ -167,19 +157,8 @@ void main() {
     } else if (hitBlackHole) {
         color = vec4(0.0, 0.0, 0.0, 1.0);
 
-    } else if (hitObject) {
-        // Compute shading
-        vec3 P = vec3(ray.x, ray.y, ray.z);
-        vec3 N = normalize(P - hitCenter);
-        vec3 V = normalize(cam.camPos - P);
-        float ambient = 0.1;
-        float diff = max(dot(N, V), 0.0);
-        float intensity = ambient + (1.0 - ambient) * diff;
-        vec3 shaded = objectColor.rgb * intensity;
-        color = vec4(shaded, objectColor.a);
-
     } else {
-        color = vec4(0.0);
+        color = vec4(backgroundColor(initialDir), 1.0);
     }
 
     imageStore(outImage, pix, color);

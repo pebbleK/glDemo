@@ -124,7 +124,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Base.h" />
-    <ClInclude Include="BlackHoleBackground.h" />
+    <ClInclude Include="BlackHoleRenderer.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="ffImage.h" />
     <ClInclude Include="IO.h" />
@@ -132,7 +132,7 @@
     <ClInclude Include="stb_image.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="BlackHoleBackground.cpp" />
+    <ClCompile Include="BlackHoleRenderer.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="ffImage.cpp" />
     <ClCompile Include="IO.cpp" />
