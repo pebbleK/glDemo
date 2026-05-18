@@ -84,6 +84,7 @@ BlackHoleRenderer::BlackHoleRenderer()
 	, m_outputTexture(0)
 	, m_cameraUBO(0)
 	, m_diskUBO(0)
+	, m_lensObjectsUBO(0)
 	, m_blackHoleUBO(0)
 	, m_glDispatchCompute(nullptr)
 	, m_glBindImageTexture(nullptr)
@@ -261,6 +262,11 @@ void BlackHoleRenderer::createUBOs() {
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(float) * 4, nullptr, GL_DYNAMIC_DRAW);
 	glBindBufferBase(GL_UNIFORM_BUFFER, 2, m_diskUBO);
 
+	glGenBuffers(1, &m_lensObjectsUBO);
+	glBindBuffer(GL_UNIFORM_BUFFER, m_lensObjectsUBO);
+	glBufferData(GL_UNIFORM_BUFFER, sizeof(LensObjectsUBOData), nullptr, GL_DYNAMIC_DRAW);
+	glBindBufferBase(GL_UNIFORM_BUFFER, 3, m_lensObjectsUBO);
+
 	glGenBuffers(1, &m_blackHoleUBO);
 	glBindBuffer(GL_UNIFORM_BUFFER, m_blackHoleUBO);
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(float) * 4, nullptr, GL_DYNAMIC_DRAW);
@@ -275,6 +281,7 @@ void BlackHoleRenderer::dispatch(Camera& camera, const glm::vec3& blackHoleWorld
 	glUniform2i(glGetUniformLocation(m_computeProgram, "uResolution"), m_computeWidth, m_computeHeight);
 	uploadCameraUBO(camera);
 	uploadDiskUBO();
+	uploadLensObjectsUBO();
 	uploadBlackHoleUBO(blackHoleWorldPos);
 
 	m_glBindImageTexture(0, m_outputTexture, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
@@ -327,6 +334,36 @@ void BlackHoleRenderer::uploadDiskUBO() {
 	glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(diskData), diskData);
 }
 
+void BlackHoleRenderer::uploadLensObjectsUBO() {
+	float time = static_cast<float>(glfwGetTime());
+	LensObjectsUBOData data = {};
+	data.numObjects = 2;
+
+	float orbitA = 30.0f;
+	float orbitB = 30.0f;
+	float angleA = time * 0.35f;
+	float angleB = time * 0.22f + 3.1415926f;
+
+	glm::vec3 planetALocal(
+		std::cos(angleA) * orbitA,
+		1.2f * std::sin(time * 0.17f),
+		std::sin(angleA) * orbitA
+	);
+	glm::vec3 planetBLocal(
+		std::cos(angleB) * orbitB,
+		-1.0f * std::sin(time * 0.13f),
+		std::sin(angleB) * orbitB
+	);
+
+	data.posRadius[0] = glm::vec4(planetALocal * kSceneToMeters, 10.35f * kSceneToMeters);
+	data.posRadius[1] = glm::vec4(planetBLocal * kSceneToMeters, 10.15f * kSceneToMeters);
+	data.color[0] = glm::vec4(0.20f, 0.55f, 1.0f, 1.0f);
+	data.color[1] = glm::vec4(1.0f, 0.42f, 0.18f, 1.0f);
+
+	glBindBuffer(GL_UNIFORM_BUFFER, m_lensObjectsUBO);
+	glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(data), &data);
+}
+
 void BlackHoleRenderer::uploadBlackHoleUBO(const glm::vec3& blackHoleWorldPos) {
 	glm::vec3 scaledPos = blackHoleWorldPos * kSceneToMeters;
 	float data[4] = { scaledPos.x, scaledPos.y, scaledPos.z, 0.0f };
@@ -336,6 +373,7 @@ void BlackHoleRenderer::uploadBlackHoleUBO(const glm::vec3& blackHoleWorldPos) {
 
 void BlackHoleRenderer::destroyGLObjects() {
 	if (m_blackHoleUBO != 0) glDeleteBuffers(1, &m_blackHoleUBO);
+	if (m_lensObjectsUBO != 0) glDeleteBuffers(1, &m_lensObjectsUBO);
 	if (m_diskUBO != 0) glDeleteBuffers(1, &m_diskUBO);
 	if (m_cameraUBO != 0) glDeleteBuffers(1, &m_cameraUBO);
 	if (m_outputTexture != 0) glDeleteTextures(1, &m_outputTexture);

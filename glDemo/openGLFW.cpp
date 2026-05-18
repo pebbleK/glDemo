@@ -18,7 +18,7 @@ BlackHoleRenderer _blackHoleRenderer;
 glm::mat4 _projMatrix(1.0f);
 int _width = 800;
 int _height = 600;
-glm::vec3 _blackHolePosition(0.0f, 0.0f, -18.0f);
+glm::vec3 _blackHolePosition(0.0f, 0.0f, -45.0f);
 
 void rend() {
 	glEnable(GL_DEPTH_TEST);

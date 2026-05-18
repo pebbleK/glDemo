@@ -32,6 +32,13 @@ private:
 		int _pad4;
 	};
 
+	struct LensObjectsUBOData {
+		int numObjects;
+		float _pad0, _pad1, _pad2;
+		glm::vec4 posRadius[2];
+		glm::vec4 color[2];
+	};
+
 	GLuint createComputeProgram(const char* path);
 	GLuint createFullscreenProgram();
 	void createFullscreenQuad();
@@ -41,6 +48,7 @@ private:
 	void drawFullscreenQuad();
 	void uploadCameraUBO(Camera& camera);
 	void uploadDiskUBO();
+	void uploadLensObjectsUBO();
 	void uploadBlackHoleUBO(const glm::vec3& blackHoleWorldPos);
 	bool loadComputeFunctions();
 	void destroyGLObjects();
@@ -57,6 +65,7 @@ private:
 	GLuint m_outputTexture;
 	GLuint m_cameraUBO;
 	GLuint m_diskUBO;
+	GLuint m_lensObjectsUBO;
 	GLuint m_blackHoleUBO;
 
 	DispatchComputeProc m_glDispatchCompute;
