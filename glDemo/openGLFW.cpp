@@ -18,7 +18,7 @@ BlackHoleRenderer _blackHoleRenderer;
 glm::mat4 _projMatrix(1.0f);
 int _width = 800;
 int _height = 600;
-glm::vec3 _blackHolePosition(0.0f, 0.0f, -45.0f);
+glm::vec3 _blackHolePosition(0.0f, 0.0f, -60.0f);
 
 void rend() {
 	glEnable(GL_DEPTH_TEST);
@@ -66,6 +66,8 @@ void rend() {
     // Draw model
     _modelMatrix = glm::mat4(1.0f);
     _modelMatrix = glm::translate(_modelMatrix, modelPositions);
+    _modelMatrix = glm::rotate(_modelMatrix, glm::radians(190.0f), glm::vec3(0, 1.0, 0));
+    _modelMatrix = glm::rotate(_modelMatrix, glm::radians(-30.0f), glm::vec3(1.0, 0, 0));
     _modelMatrix = glm::scale(_modelMatrix, glm::vec3(0.2f));
     _shader_scene.setMatrix("_modelMatrix", _modelMatrix);
     _model->draw(_shader_scene);

@@ -339,8 +339,8 @@ void BlackHoleRenderer::uploadLensObjectsUBO() {
 	LensObjectsUBOData data = {};
 	data.numObjects = 2;
 
-	float orbitA = 50.0f;
-	float orbitB = 50.0f;
+	float orbitA = 20.0f;
+	float orbitB = 40.0f;
 	float angleA = time * 0.35f;
 	float angleB = time * 0.22f + 3.1415926f;
 
@@ -355,8 +355,11 @@ void BlackHoleRenderer::uploadLensObjectsUBO() {
 		std::sin(angleB) * orbitB
 	);
 
-	data.posRadius[0] = glm::vec4(planetALocal * kSceneToMeters, 10.35f * kSceneToMeters);
-	data.posRadius[1] = glm::vec4(planetBLocal * kSceneToMeters, 10.15f * kSceneToMeters);
+	float angleRateA = 5.35f;
+	float angleRateB = 10.35f;
+
+	data.posRadius[0] = glm::vec4(planetALocal * kSceneToMeters, angleRateA * kSceneToMeters);
+	data.posRadius[1] = glm::vec4(planetBLocal * kSceneToMeters, angleRateB * kSceneToMeters);
 	data.color[0] = glm::vec4(0.20f, 0.55f, 1.0f, 1.0f);
 	data.color[1] = glm::vec4(1.0f, 0.42f, 0.18f, 1.0f);
 
