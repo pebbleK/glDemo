@@ -1,0 +1,48 @@
+cmake_minimum_required(VERSION 3.20)
+
+project(glDemo LANGUAGES CXX)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+add_executable(glDemo
+    src/openGLFW.cpp
+    src/BlackHoleRenderer.cpp
+    src/Camera.cpp
+    src/IO.cpp
+    src/ffImage.cpp
+    src/Shader.cpp
+)
+
+target_include_directories(glDemo PRIVATE
+    src
+    third_party/stb
+)
+
+find_package(OpenGL REQUIRED)
+find_package(glfw3 CONFIG REQUIRED)
+find_package(glad CONFIG REQUIRED)
+find_package(glm CONFIG REQUIRED)
+find_package(assimp CONFIG REQUIRED)
+
+target_link_libraries(glDemo PRIVATE
+    OpenGL::GL
+    glfw
+    glad::glad
+    glm::glm
+    assimp::assimp
+)
+
+add_custom_command(TARGET glDemo POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${CMAKE_SOURCE_DIR}/assets/shader
+            $<TARGET_FILE_DIR:glDemo>/shader
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${CMAKE_SOURCE_DIR}/assets/res
+            $<TARGET_FILE_DIR:glDemo>/res
+)
+
+set_property(TARGET glDemo PROPERTY
+    VS_DEBUGGER_WORKING_DIRECTORY "$<TARGET_FILE_DIR:glDemo>"
+)

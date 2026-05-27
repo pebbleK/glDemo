@@ -1,14 +1,14 @@
 #include "ffImage.h"
 
 #define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
+#include <stb_image.h>
 
 ffImage* ffImage::readFromFile(const char* _fileName) {
 	int _picType = 0;
 	int _width = 0;
 	int _height = 0;
 
-	//stbimage¶ÁÈëÍ¼Æ¬ÊÇ·´¹ýÀ´µÄ
+	//stbimageï¿½ï¿½ï¿½ï¿½Í¼Æ¬ï¿½Ç·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	stbi_set_flip_vertically_on_load(true);
 
 	unsigned char* bits = stbi_load(_fileName, &_width, &_height, &_picType, STBI_rgb_alpha);

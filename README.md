@@ -19,14 +19,17 @@
 
 ```text
 glDemo/
-  glDemo.sln                 Visual Studio solution
-  glDemo/
+  CMakeLists.txt             CMake build script
+  src/
     openGLFW.cpp             Main application entry
     BlackHoleRenderer.*      Black hole background renderer
     Camera.*                 Camera movement and view matrix
     Shader.*                 Shader wrapper
     IO.*                     OBJ/MTL model loading
     ffImage.*                Image loading wrapper
+  third_party/stb/
+    stb_image.h              stb image loader
+  assets/
     shader/
       geodesic.comp          Black hole geodesic compute shader
       sceneShaderv.glsl      Scene vertex shader
@@ -48,15 +51,16 @@ glDemo/
 - GLAD
 - GLM
 - Assimp
+- CMake 3.20 or newer
 
-The project is currently organized as a Visual Studio project. Include and library paths for external dependencies must be configured locally in the Visual Studio project settings.
+External dependencies are resolved through CMake packages. Using vcpkg is recommended on Windows.
 
 ### Build And Run
 
-1. Open `glDemo.sln` with Visual Studio.
-2. Make sure the dependency paths are configured correctly, including GLFW, GLAD, GLM, and Assimp.
-3. Select an `x64` configuration.
-4. Build and run the `glDemo` project.
+1. Install dependencies with vcpkg, for example: `vcpkg install glfw3 glad glm assimp:x64-windows`.
+2. Configure the project: `cmake -S . -B build -A x64 -DCMAKE_TOOLCHAIN_FILE=C:/path/to/vcpkg/scripts/buildsystems/vcpkg.cmake`.
+3. Build the project: `cmake --build build --config Debug`.
+4. Run `build/Debug/glDemo.exe`, or open the folder in Visual Studio as a CMake project.
 
 At runtime, make sure the working directory can access:
 
@@ -69,6 +73,8 @@ shader/fsunShader.glsl
 res/model/ball.obj
 res/model/ball.mtl
 ```
+
+CMake copies `assets/shader` and `assets/res` next to the executable after each build.
 
 ### Controls
 
@@ -118,14 +124,17 @@ This makes the black hole behave as a distant background, while regular foregrou
 
 ```text
 glDemo/
-  glDemo.sln                 Visual Studio solution
-  glDemo/
+  CMakeLists.txt             CMake 构建脚本
+  src/
     openGLFW.cpp             Main application entry
     BlackHoleRenderer.*      Black hole background renderer
     Camera.*                 Camera movement and view matrix
     Shader.*                 Shader wrapper
     IO.*                     OBJ/MTL model loading
     ffImage.*                Image loading wrapper
+  third_party/stb/
+    stb_image.h              stb 图片加载库
+  assets/
     shader/
       geodesic.comp          Black hole geodesic compute shader
       sceneShaderv.glsl      Scene vertex shader
@@ -147,15 +156,16 @@ glDemo/
 - GLAD
 - GLM
 - Assimp
+- CMake 3.20 或更高版本
 
-项目当前通过 Visual Studio 工程文件组织。外部依赖的 include/lib 路径需要在本地 Visual Studio 项目属性中正确配置。
+外部依赖通过 CMake package 查找。Windows 下推荐使用 vcpkg 安装依赖。
 
 ### 构建与运行
 
-1. 使用 Visual Studio 打开 `glDemo.sln`。
-2. 确认项目依赖项路径已经正确配置，包括 GLFW、GLAD、GLM 和 Assimp。
-3. 选择 `x64` 配置。
-4. 构建并运行 `glDemo` 项目。
+1. 使用 vcpkg 安装依赖，例如：`vcpkg install glfw3 glad glm assimp:x64-windows`。
+2. 配置项目：`cmake -S . -B build -A x64 -DCMAKE_TOOLCHAIN_FILE=C:/path/to/vcpkg/scripts/buildsystems/vcpkg.cmake`。
+3. 构建项目：`cmake --build build --config Debug`。
+4. 运行 `build/Debug/glDemo.exe`，或者在 Visual Studio 中以 CMake 项目方式打开该文件夹。
 
 运行时请确保工作目录能访问：
 
@@ -168,6 +178,8 @@ shader/fsunShader.glsl
 res/model/ball.obj
 res/model/ball.mtl
 ```
+
+CMake 会在每次构建后把 `assets/shader` 和 `assets/res` 复制到可执行文件旁边。
 
 ### 控制方式
 
