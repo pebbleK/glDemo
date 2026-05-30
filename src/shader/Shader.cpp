@@ -10,7 +10,7 @@ void Shader::initShader(const char* _vertexPath, const char* _fragPath) {
 	_vShaderFile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
 	_fShaderFile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
 
-	try {
+	try{
 		_vShaderFile.open(_vertexPath);
 		_fShaderFile.open(_fragPath);
 
@@ -21,7 +21,7 @@ void Shader::initShader(const char* _vertexPath, const char* _fragPath) {
 		_vertexCode = _vShaderStream.str();
 		_fragCode = _fShaderStream.str();
 	}
-	catch (std::ifstream::failure e) {
+	catch(std::ifstream::failure e){
 		std::string errStr = "read shader fail";
 		std::cout << errStr << std::endl;
 	}
@@ -29,7 +29,7 @@ void Shader::initShader(const char* _vertexPath, const char* _fragPath) {
 	const char* _vShaderStr = _vertexCode.c_str();
 	const char* _fShaderStr = _fragCode.c_str();
 
-	//shaderµÄ±àÒë
+	//shader
 	unsigned int _vertexID = 0, _fragID = 0;
 	char _infoLog[512];
 	int _successFlag = 0;
@@ -38,7 +38,7 @@ void Shader::initShader(const char* _vertexPath, const char* _fragPath) {
 	glShaderSource(_vertexID, 1, &_vShaderStr, NULL);
 	glCompileShader(_vertexID);
 
-	glGetShaderiv(_vertexID, GL_COMPILE_STATUS, &_successFlag); //²éÑ¯±àÒëÇé¿ö
+	glGetShaderiv(_vertexID, GL_COMPILE_STATUS, &_successFlag); //ï¿½ï¿½Ñ¯ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	if (!_successFlag) {
 		glGetShaderInfoLog(_vertexID, 512, NULL, _infoLog);
 		std::string errStr(_infoLog);
@@ -56,11 +56,11 @@ void Shader::initShader(const char* _vertexPath, const char* _fragPath) {
 		std::cout << _infoLog << std::endl;
 	}
 
-	//shaderµÄÁ´½Ó
+	//shader
 	m_shaderProgram = glCreateProgram();
 	glAttachShader(m_shaderProgram, _vertexID);
 	glAttachShader(m_shaderProgram, _fragID);
-	glLinkProgram(m_shaderProgram); //Á´½ÓÁ½¸öID
+	glLinkProgram(m_shaderProgram); //ID
 
 	glGetProgramiv(m_shaderProgram, GL_LINK_STATUS, &_successFlag);
 	if (!_successFlag) {
@@ -68,40 +68,12 @@ void Shader::initShader(const char* _vertexPath, const char* _fragPath) {
 		std::string errStr(_infoLog);
 		std::cout << _infoLog << std::endl;
 	}
-	//Ò»°ã±£Áô×îºó±àÒëºÃµÄm_shaderProgram¼´¿É
+	//m_shaderProgram
 	glDeleteShader(_vertexID);
 	glDeleteShader(_fragID);
 }
 
 void Shader::setMatrix(const std::string& _name, glm::mat4 _matrix)const {
-	 /* glGetUniformLocation(m_shaderProgram, _name.c_str())
-
-		- »ñÈ¡×ÅÉ«Æ÷³ÌÐòÖÐuniform±äÁ¿µÄÎ»ÖÃ
-		- m_shaderProgram: ×ÅÉ«Æ÷³ÌÐòµÄOpenGL ID
-		- _name.c_str() : ½«C++×Ö·û´®×ª»»ÎªC·ç¸ñ×Ö·û´®£¨OpenGL
-		APIÐèÒª£©
-		- ·µ»ØÒ»¸öÕûÊý£¬±íÊ¾uniformÔÚ×ÅÉ«Æ÷ÖÐµÄÎ»ÖÃ
-
-		2. glUniformMatrix4fv(...)
-
-		ÕâÊÇOpenGLµÄºËÐÄº¯Êý£¬ÓÃÓÚÉèÖÃ¾ØÕóuniform£º
-		- glUniformMatrix4fv:
-		"gl"±íÊ¾OpenGL£¬"Uniform"±íÊ¾uniform±äÁ¿£¬"Matrix4f"
-		±íÊ¾4x4¸¡µã¾ØÕó£¬"v"±íÊ¾ÏòÁ¿ / Êý×éÐÎÊ½
-		- µÚÒ»¸ö²ÎÊý :
-		uniformµÄÎ»ÖÃ£¨À´×ÔglGetUniformLocation£©
-		- µÚ¶þ¸ö²ÎÊý : ÒªÉèÖÃµÄ¾ØÕóÊýÁ¿£¨ÕâÀïÊÇ1¸ö£©
-		- µÚÈý¸ö²ÎÊý : GL_FALSE±íÊ¾²»½øÐÐ×ªÖÃ£¨OpenGLÊ¹ÓÃÁÐÖ÷
-		Ðò£¬glmÄ¬ÈÏÒ²ÊÇÁÐÖ÷Ðò£©
-		- µÚËÄ¸ö²ÎÊý : ¾ØÕóÊý¾ÝµÄÖ¸Õë
-
-		3. glm::value_ptr(_matrix)
-
-		- glm::value_ptr() :
-		glm¿âµÄº¯Êý£¬»ñÈ¡¾ØÕóµ×²ãÊý¾ÝµÄÖ¸Õë
-		- ÒòÎªOpenGL
-		APIÐèÒªÔ­Ê¼Êý¾ÝÖ¸Õë£¬¶øglmµÄmat4ÊÇ·â×°ÀàÐÍ
-		- Õâ¸öº¯Êý·µ»ØÖ¸Ïò¾ØÕó16¸ö¸¡µãÊýµÄÖ¸Õë */
 	glUniformMatrix4fv(glGetUniformLocation(m_shaderProgram, _name.c_str()), 1, GL_FALSE, glm::value_ptr(_matrix));
 }
 

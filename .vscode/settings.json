@@ -1,0 +1,6 @@
+{
+  "cmake.useCMakePresets": "always",
+  "cmake.configurePreset": "windows-vcpkg-local",
+  "cmake.buildPreset": "windows-vcpkg-local-debug",
+  "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools"
+}

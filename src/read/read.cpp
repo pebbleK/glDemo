@@ -1,8 +1,8 @@
-#include "IO.h"
-#include"ffImage.h"
+#include "read.h"
+#include"Image.h"
 
-namespace FF {
-	ffMesh::ffMesh(std::vector<ffVertex> _vertexVec, std::vector<uint> _indexVec, std::vector<ffTexture> _texVec, ffMaterial _material) {
+
+	Mesh::Mesh(std::vector<Vertex> _vertexVec, std::vector<uint> _indexVec, std::vector<Texture> _texVec, Material _material) {
 		m_vertexVec = _vertexVec;
 		m_indexVec = _indexVec;
 		m_texVec = _texVec;
@@ -11,7 +11,7 @@ namespace FF {
 		setupMesh();
 	}
 
-	void ffMesh::draw(Shader& _shader) {
+	void Mesh::draw(Shader& _shader) {
 		uint diffuseTex = 0;
 		uint specularTex = 0;
 		for (uint i = 0; i < m_texVec.size(); i++) {
@@ -47,7 +47,7 @@ namespace FF {
 		glActiveTexture(GL_TEXTURE0);
 	}
 
-	void ffMesh::setupMesh() {
+	void Mesh::setupMesh() {
 		uint _VBO = 0;
 		uint _EBO = 0;
 
@@ -57,7 +57,7 @@ namespace FF {
 		glGenBuffers(1, &_VBO);
 		glBindBuffer(GL_ARRAY_BUFFER, _VBO);
 
-		glBufferData(GL_ARRAY_BUFFER, sizeof(ffVertex) * m_vertexVec.size(), &m_vertexVec[0], GL_STATIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * m_vertexVec.size(), &m_vertexVec[0], GL_STATIC_DRAW);
 
 		glGenBuffers(1, &_EBO);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _EBO);
@@ -65,17 +65,17 @@ namespace FF {
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint) * m_indexVec.size(), &m_indexVec[0], GL_STATIC_DRAW);
 
 		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(ffVertex), (void*)0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
 		glEnableVertexAttribArray(1);
-		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(ffVertex), (void*)offsetof(ffVertex, m_texCoord));
+		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, m_texCoord));
 		glEnableVertexAttribArray(2);
-		glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(ffVertex), (void*)offsetof(ffVertex, m_normal));
+		glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, m_normal));
 
 		glBindVertexArray(0);
 
 	}
 
-	void ffModel::loadModel(std::string _path) {
+	void Model::loadModel(std::string _path) {
 		Assimp::Importer importer;
 		// If a quadrilateral is passed, split it into triangles (aiProcess_Triangulate)
 		// If the texture coordinates are inverted, flip the texture coordinates (aiProcess_FlipUVs)
@@ -90,7 +90,7 @@ namespace FF {
 		processNode(_scene->mRootNode, _scene);
 	}
 
-	void ffModel::processNode(aiNode* _node, const aiScene* _scene) {
+	void Model::processNode(aiNode* _node, const aiScene* _scene) {
 		for(uint i = 0; i < _node->mNumMeshes; i++) {
 			aiMesh* _mesh = _scene->mMeshes[_node->mMeshes[i]];
 			m_meshVec.push_back(processMesh(_mesh, _scene));
@@ -101,15 +101,15 @@ namespace FF {
 		}
 	}
 
-	ffMesh ffModel::processMesh(aiMesh* _mesh, const aiScene* _scene) {
-		std::vector<ffVertex>	_vertexVec;
+	Mesh Model::processMesh(aiMesh* _mesh, const aiScene* _scene) {
+		std::vector<Vertex>	_vertexVec;
 		std::vector<uint>		_indexVec;	
-		std::vector<ffTexture>	_texVec;
-		ffMaterial				_material;
+		std::vector<Texture>	_texVec;
+		Material				_material;
 
 		//Parse vertices
 		for (uint i = 0; i < _mesh->mNumVertices; i++) {
-			ffVertex _vertex;
+			Vertex _vertex;
 
 			//Location information reading
 			glm::vec3 _pos;
@@ -161,26 +161,26 @@ namespace FF {
 				_material.m_shininess = _shininess;
 			}
 			//diffuse
-			std::vector<ffTexture> _diffuseVec = loadMaterialTextures(_mat,aiTextureType_DIFFUSE, TEXTURE_DIFFUSE_STR);
+			std::vector<Texture> _diffuseVec = loadMaterialTextures(_mat,aiTextureType_DIFFUSE, TEXTURE_DIFFUSE_STR);
 			_texVec.insert(_texVec.end(), _diffuseVec.begin(), _diffuseVec.end());
 			//specular
-			std::vector<ffTexture> _specularVec = loadMaterialTextures(_mat,aiTextureType_SPECULAR, TEXTURE_SPECULAR_STR);
+			std::vector<Texture> _specularVec = loadMaterialTextures(_mat,aiTextureType_SPECULAR, TEXTURE_SPECULAR_STR);
 			_texVec.insert(_texVec.end(), _specularVec.begin(), _specularVec.end());
 		}
 		
-		return ffMesh(_vertexVec, _indexVec, _texVec, _material);
+		return Mesh(_vertexVec, _indexVec, _texVec, _material);
 	}
 
-	std::vector<ffTexture> ffModel::loadMaterialTextures(aiMaterial* _mat, aiTextureType _type, std::string _typeName) {
-		std::vector<ffTexture> _texVec;
+	std::vector<Texture> Model::loadMaterialTextures(aiMaterial* _mat, aiTextureType _type, std::string _typeName) {
+		std::vector<Texture> _texVec;
 
 		for (uint i = 0; i < _mat->GetTextureCount(_type); i++) {
-			ffTexture _tex;
+			Texture _tex;
 
 			aiString _path;
 			_mat->GetTexture(_type, i, &_path); //The position of this texture relative to the model
 
-			_tex.m_id = ffTextureManager::getInstance()->creatTexture(_path.C_Str(), m_dir);
+			_tex.m_id = TextureManager::getInstance()->creatTexture(_path.C_Str(), m_dir);
 			_tex.m_path = _path.C_Str();
 			_tex.m_type = _typeName;
 
@@ -189,21 +189,21 @@ namespace FF {
 		return _texVec;
 	}
 
-	void ffModel::draw(Shader& _shader) {
+	void Model::draw(Shader& _shader) {
 		for(uint i = 0; i < m_meshVec.size(); i++) {
 			m_meshVec[i].draw(_shader);
 		}
 	}
 
-	SINGLE_INSTANCE_SET(ffTextureManager)
+	SINGLE_INSTANCE_SET(TextureManager)
 
-	uint ffTextureManager::creatTexture(std::string _path) {
+	uint TextureManager::creatTexture(std::string _path) {
 		std::map<std::string, uint>::iterator _it = m_texMap.find(_path);
 		if (_it != m_texMap.end()) {
 			return _it->second;
 		}
 
-		ffImage* _image = ffImage::readFromFile(_path.c_str());
+		Image* _image = Image::readFromFile(_path.c_str());
 
 		uint _texID = 0;
 		glGenTextures(1, &_texID);
@@ -219,7 +219,6 @@ namespace FF {
 		m_texMap[_path] = _texID;
 		return _texID;
 	}
-	uint ffTextureManager::creatTexture(std::string _path, std::string _dir) {
+	uint TextureManager::creatTexture(std::string _path, std::string _dir) {
 		return creatTexture(_dir + "/" + _path);
 	}
-}

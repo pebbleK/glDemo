@@ -1,7 +1,7 @@
 #include "Base.h"
 #include "Shader.h"
 #include "Camera.h"
-#include "IO.h"
+#include "read.h"
 #include "BlackHoleRenderer.h"
 
 uint VAO_sun = 0;
@@ -11,7 +11,7 @@ glm::vec3 light_color(1.0f);
 Shader _shader_sun;
 Shader _shader_scene;
 
-FF::ffModel* _model;
+Model* _model;
 
 Camera _camera;
 BlackHoleRenderer _blackHoleRenderer;
@@ -240,7 +240,7 @@ int main() {
     VAO_sun = creatLightModel();
     light_color = glm::vec3(1.0f, 1.0f, 1.0f); // Light color
 
-	_model = new FF::ffModel("res/model/ball.obj");
+	_model = new Model("res/model/ball.obj");
 
 	initShader("", "");
 	if (!_blackHoleRenderer.init(_width, _height, 200, 150)) {

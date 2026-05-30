@@ -26,7 +26,7 @@ glDemo/
     Camera.*                 Camera movement and view matrix
     Shader.*                 Shader wrapper
     IO.*                     OBJ/MTL model loading
-    ffImage.*                Image loading wrapper
+    Image.*                  Image loading wrapper
   third_party/stb/
     stb_image.h              stb image loader
   assets/
@@ -131,7 +131,7 @@ glDemo/
     Camera.*                 Camera movement and view matrix
     Shader.*                 Shader wrapper
     IO.*                     OBJ/MTL model loading
-    ffImage.*                Image loading wrapper
+    Image.*                  Image loading wrapper
   third_party/stb/
     stb_image.h              stb 图片加载库
   assets/

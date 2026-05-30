@@ -1,7 +1,7 @@
 #pragma once
 #include"Base.h"
 
-class ffImage
+class Image
 {
 private:
 	int m_width;
@@ -21,7 +21,7 @@ public:
 		return m_data[y * m_width + x];
 	}
 
-	ffImage(int _width, int _height, int _picType, ffRGBA* _data = NULL) {
+	Image(int _width, int _height, int _picType, ffRGBA* _data = NULL) {
 		m_width = _width;
 		m_height = _height;
 		m_picType = _picType;
@@ -35,11 +35,11 @@ public:
 			m_data = NULL;
 		}
 	}
-	~ffImage() {
+	~Image() {
 		if (m_data) {
 			delete[] m_data;
 		}
 	}
-	static ffImage* readFromFile(const char* _fileName);
+	static Image* readFromFile(const char* _fileName);
 };
 

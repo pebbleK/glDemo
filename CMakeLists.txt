@@ -7,16 +7,22 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_executable(glDemo
-    src/openGLFW.cpp
-    src/BlackHoleRenderer.cpp
-    src/Camera.cpp
-    src/IO.cpp
-    src/ffImage.cpp
-    src/Shader.cpp
+    src/main/openGLFW.cpp
+    src/renderer/BlackHoleRenderer.cpp
+    src/camera/Camera.cpp
+    src/read/read.cpp
+    src/image/Image.cpp
+    src/shader/Shader.cpp
+    src/renderer/SrceenSpaceReflection.cpp
 )
 
 target_include_directories(glDemo PRIVATE
-    src
+    src/main
+    src/renderer
+    src/camera
+    src/read
+    src/image
+    src/shader
     third_party/stb
 )
 
