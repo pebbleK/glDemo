@@ -3,6 +3,7 @@
 #include "Camera.h"
 #include "read.h"
 #include "BlackHoleRenderer.h"
+#include "SrceenSpaceReflection.h"
 
 uint VAO_sun = 0;
 
@@ -15,6 +16,8 @@ Model* _model;
 
 Camera _camera;
 BlackHoleRenderer _blackHoleRenderer;
+ScreenSpaceReflection _screenSpaceReflection;
+
 glm::mat4 _projMatrix(1.0f);
 int _width = 800;
 int _height = 600;
@@ -32,6 +35,8 @@ void rend() {
 
 	_blackHoleRenderer.renderBackground(_camera, _blackHolePosition);
 	glClear(GL_DEPTH_BUFFER_BIT);
+
+    _screenSpaceReflection.beginScenePass();
 
 	// Object rendering
     _shader_scene.start();
@@ -84,6 +89,16 @@ void rend() {
     glBindVertexArray(VAO_sun);
     glDrawArrays(GL_TRIANGLES, 0, 36);
     _shader_sun.end();
+
+    _screenSpaceReflection.endScenePass();
+
+    // _screenSpaceReflection.beginCubeGBufferPass();
+
+    // _screenSpaceReflection.drawCubeGBuffer(cubeModelMatrix, _camera.getMatrix(), _projMatrix);
+
+    // _screenSpaceReflection.endCubeGBufferPass();
+
+    // _screenSpaceReflection.debugDrawCubeMask();
 }
 
 uint creatLightModel() {
@@ -250,12 +265,19 @@ int main() {
 		return -1;
 	}
 
+    if (!_screenSpaceReflection.init(_width, _height, 200, 150)) {
+    std::cout << "Failed to initialize screen space reflection" << std::endl;
+    glfwDestroyWindow(window);
+    glfwTerminate();
+    return -1;
+    }
+
     while (!glfwWindowShouldClose(window)) {
         processInput(window);
+        // create front and back framebuffers when first creating window
+        rend(); // automatically draw to back framebuffer by default
 
-        rend();
-
-        glfwSwapBuffers(window);
+        glfwSwapBuffers(window); // swap back framebuffer to the front
         glfwPollEvents();
     }
     glfwTerminate();

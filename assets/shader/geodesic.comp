@@ -154,15 +154,6 @@ void main() {
 
     ivec2 pix = ivec2(gl_GlobalInvocationID.xy);
     if (pix.x >= WIDTH || pix.y >= HEIGHT) return;
-    /*
-    GLuint groupsX = (GLuint)std::ceil(cw /
-    16.0f);  // 200 / 16 = 12.5 -> 13 groups
-    GLuint groupsY = (GLuint)std::ceil(ch /
-    16.0f);  // 150 / 16 = 9.375 -> 10 groups
-    - Actual invocations launched: 13 * 10 * 16 * 16 = 33280 threads
-    - Pixels that need processing: 200 * 150 = 30000 pixels
-    - The extra 3280 threads must be discarded
-    */
 
     // Init Ray
     // If the screen is positioned at a distance of 1 in front of the camera,
