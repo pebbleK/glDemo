@@ -264,6 +264,74 @@ void ScreenSpaceReflection::dispatch(Camera &camera, const glm::mat4 &viewMatrix
 
 }
 
+GLuint ScreenSpaceReflection::createGBufferProgram(){
+    const char* vertexSource = R"(
+    #version 330 core
+    layout(location = 0) in vec3 aPos;
+    layout(location = 1) in vec2 aUV;
+    layout(location = 2) in vec3 aNormal;
+
+    out vec3 WorldPos;
+    out vec3 WorldNormal;
+
+    uniform mat4 uModelMatrix;
+    uniform mat4 uViewMatrix;
+    uniform mat4 uProjMatrix;
+
+    void main(){
+        vec4 world = uModelMatrix * vec4(aPos, 1.0);
+        WorldPos = world.xyz;
+        WorldNormal = mat3(transpose(inverse(uModelMatrix))) * aNormal;
+        gl_Position = uProjMatrix * uViewMatrix * world;
+    }
+    )"; 
+
+    const char* fragmentSource = R"(
+    #version 330 core
+    layout(location = 0) out vec4 outPosition;
+    layout(location = 1) out vec4 outNormal;
+    layout(location = 2) out vec4 outMask;
+
+    in vec3 WorldPos;
+    in vec3 WorldNormal;
+
+    void main(){
+        outPosition = vec4(WorldPos, 1.0);
+        outNormal = vec4(normalize(WorldPos), 1.0);
+        outMask = vec4(1.0, 1.0, 1.0, 1.0);
+    }
+    )";
+
+    GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(vertexShader, 1, &vertexSource, nullptr);
+    glCompileShader(vertexShader);
+    if (!checkShader(vertexShader, "black hole fullscreen vertex")) {
+		glDeleteShader(vertexShader);
+		return 0;
+	}
+
+    GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(fragmentShader, 1, &fragmentSource, nullptr);
+    glCompileShader(fragmentShader);
+	if (!checkShader(fragmentShader, "black hole fullscreen fragment")) {
+		glDeleteShader(vertexShader);
+		glDeleteShader(fragmentShader);
+		return 0;
+	}
+
+    GLuint program = glCreateProgram();
+	glAttachShader(program, vertexShader);
+	glAttachShader(program, fragmentShader);
+	glLinkProgram(program);
+	glDeleteShader(vertexShader);
+	glDeleteShader(fragmentShader);
+	if (!checkProgram(program, "black hole fullscreen")) {
+		glDeleteProgram(program);
+		return 0;
+	}
+	return program;
+}
+
 uint ScreenSpaceReflection::createReflectionPlant(){
     uint _VAO = 0;
     uint _VBO = 0;
@@ -436,10 +504,6 @@ bool ScreenSpaceReflection::createCubeGBuffer(int width, int height){
     glBindTexture(GL_TEXTURE_2D, 0);
 
     return complete;
-}
-
-GLuint ScreenSpaceReflection::createGBufferProgram(){
-
 }
 
 // 主程序使用

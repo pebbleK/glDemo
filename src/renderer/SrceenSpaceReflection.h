@@ -36,19 +36,19 @@ private:
     using MemoryBarrierProc = void (APIENTRY *)(GLbitfield barriers);
     bool loadComputeFunctions();
 
+    GLuint createFullscreenProgram();
     void createFullScreenQuad();
 
     void getCamPos(Camera &_camera);
 
+    GLuint createGBufferProgram();
     uint createReflectionPlant();
 
     bool createSceneFramebuffer(int width, int height);
 
     GLuint createComputeProgram(const char* path);
-    GLuint createFullscreenProgram();
 
     bool createCubeGBuffer(int width, int height);
-    GLuint createGBufferProgram();
 
 private:
     int m_screenWidth;
