@@ -15,6 +15,9 @@ public:
     void beginScenePass();
     void endScenePass();
 
+    void beginCubeGBufferPass();
+    void endCubeGBufferPass();
+
     GLuint getSceneColorTexture() const;
     GLuint getSceneDepthTexture() const;
 
@@ -22,10 +25,9 @@ public:
     debug调试：把离屏渲染的颜色纹理m_sceneColorTexture绘制到屏幕上，
     方便观察当前FBO的中间结果。
     */
-    void debugDrawSceneColor();
-    void debugDrawSceneDepth();
+    void debugDraw();
  
-    void drawReflectionCube(Camera &camera,
+    void drawReflectionCube(
     const glm::mat4 modelMatrix,
     const glm::mat4 viewMatrix,
     const glm::mat4 projMatrix);
@@ -37,18 +39,17 @@ private:
     bool loadComputeFunctions();
 
     GLuint createFullscreenProgram();
-    void createFullScreenQuad();
+    uint createFullScreenQuad();
 
     void getCamPos(Camera &_camera);
 
+    bool createCubeGBuffer(int width, int height);
     GLuint createGBufferProgram();
     uint createReflectionPlant();
 
     bool createSceneFramebuffer(int width, int height);
 
     GLuint createComputeProgram(const char* path);
-
-    bool createCubeGBuffer(int width, int height);
 
 private:
     int m_screenWidth;
@@ -59,19 +60,16 @@ private:
 
     GLuint m_ssrComputeProgram;
     GLuint m_gbufferProgram;
-    GLuint m_cubeProgram;
     GLuint m_fullscreenProgram;
 
     GLuint m_cubeVAO;
-    GLuint m_cubeVBO;
     GLuint m_quadVAO;
-    GLuint m_quadVBO;
 
     GLuint m_sceneFBO;
     GLuint m_sceneColorTexture;
     GLuint m_sceneDepthTexture;
 
-    // save to compute
+    // prepare to compute
     GLuint m_cubeGBufferFBO;
     GLuint m_cubePositionTexture;
     GLuint m_cubeNormalTexture;

@@ -12,13 +12,10 @@ ScreenSpaceReflection::ScreenSpaceReflection()
 , m_cubeMaskTexture(0)
 , m_cubeDepthTexture(0)
 , m_reflectionTexture(0)
-, m_cubeProgram(0)
 , m_gbufferProgram(0)
 , m_fullscreenProgram(0)
 , m_cubeVAO(0)
-, m_cubeVBO(0)
 , m_quadVAO(0)
-, m_quadVBO(0)
 {}
 
 ScreenSpaceReflection::~ScreenSpaceReflection(){}
@@ -38,11 +35,11 @@ bool ScreenSpaceReflection::init(int screenWidth, int screenHeight, int computeW
         return false;
     }
 
+    m_quadVAO = createFullScreenQuad();
     m_fullscreenProgram = createFullscreenProgram();
-    createFullScreenQuad();
 
     m_cubeVAO = createReflectionPlant();
-    m_cubeVBO = createGBufferProgram();
+    m_gbufferProgram = createGBufferProgram();
 
     return m_fullscreenProgram != 0
     && m_quadVAO != 0
@@ -143,8 +140,8 @@ GLuint ScreenSpaceReflection::createFullscreenProgram(){
     uniform int debugMode;
     void main(){
         if (debugMode == 1) {
-            float depth = texture(screenTexture, TexCoord).r;
-            FragColor = vec4(vec3(1.0 - depth), 1.0);
+            float debugColor = texture(screenTexture, TexCoord).r;
+            FragColor = vec4(vec3(1.0 - debugColor), 1.0);
         } else {
             FragColor = texture(screenTexture, TexCoord);
         }
@@ -181,7 +178,10 @@ GLuint ScreenSpaceReflection::createFullscreenProgram(){
 	return program;
 }
 
-void ScreenSpaceReflection::createFullScreenQuad(){
+uint ScreenSpaceReflection::createFullScreenQuad(){
+    uint _VAO;
+    uint _VBO;
+
     float quadVertices[] = {
     -1.0f,  1.0f, 0.0f, 1.0f,
     -1.0f, -1.0f, 0.0f, 0.0f,
@@ -191,10 +191,10 @@ void ScreenSpaceReflection::createFullScreenQuad(){
      1.0f,  1.0f, 1.0f, 1.0f,
     };
 
-    glGenVertexArrays(1, &m_quadVAO);
-	glGenBuffers(1, &m_quadVBO);
-	glBindVertexArray(m_quadVAO);
-	glBindBuffer(GL_ARRAY_BUFFER, m_quadVBO);
+    glGenVertexArrays(1, &_VAO);
+	glGenBuffers(1, &_VBO);
+	glBindVertexArray(_VAO);
+	glBindBuffer(GL_ARRAY_BUFFER, _VBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), quadVertices, GL_STATIC_DRAW);
 
     glEnableVertexAttribArray(0);
@@ -205,33 +205,16 @@ void ScreenSpaceReflection::createFullScreenQuad(){
 
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    return _VAO;
 }
 
-void ScreenSpaceReflection::debugDrawSceneColor() {
+void ScreenSpaceReflection::debugDraw() {
     glUseProgram(m_fullscreenProgram);
     glBindVertexArray(m_quadVAO);
 
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, m_sceneColorTexture);
-    glUniform1i(glGetUniformLocation(m_fullscreenProgram, "screenTexture"), 0);
-    glUniform1i(glGetUniformLocation(m_fullscreenProgram, "debugMode"), 0);
-
-    glDisable(GL_DEPTH_TEST);
-    glDepthMask(GL_FALSE);
-    glDrawArrays(GL_TRIANGLES, 0, 6);
-
-    glDepthMask(GL_TRUE);
-    glEnable(GL_DEPTH_TEST);
-    glBindVertexArray(0);
-    glUseProgram(0);
-}
-
-void ScreenSpaceReflection::debugDrawSceneDepth() {
-    glUseProgram(m_fullscreenProgram);
-    glBindVertexArray(m_quadVAO);
-
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, m_sceneDepthTexture);
+    glBindTexture(GL_TEXTURE_2D, m_cubeMaskTexture);
     glUniform1i(glGetUniformLocation(m_fullscreenProgram, "screenTexture"), 0);
     glUniform1i(glGetUniformLocation(m_fullscreenProgram, "debugMode"), 1);
 
@@ -253,11 +236,34 @@ void ScreenSpaceReflection::resize(int screenWidth, int screenHeight){
 
 }
 
-void ScreenSpaceReflection::drawReflectionCube(Camera &camera,
+void ScreenSpaceReflection::drawReflectionCube(
     const glm::mat4 modelMatrix,
     const glm::mat4 viewMatrix,
     const glm::mat4 projMatrix){
+        glUseProgram(m_gbufferProgram);
 
+        glUniformMatrix4fv(
+        glGetUniformLocation(m_gbufferProgram, "uModelMatrix"),
+        1,
+        GL_FALSE,
+        glm::value_ptr(modelMatrix));
+
+        glUniformMatrix4fv(
+        glGetUniformLocation(m_gbufferProgram, "uViewMatrix"),
+        1,
+        GL_FALSE,
+        glm::value_ptr(viewMatrix));
+
+        glUniformMatrix4fv(
+        glGetUniformLocation(m_gbufferProgram, "uProjMatrix"),
+        1,
+        GL_FALSE,
+        glm::value_ptr(projMatrix));
+
+        glBindVertexArray(m_cubeVAO);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+
+        glUseProgram(0);
 }
 
 void ScreenSpaceReflection::dispatch(Camera &camera, const glm::mat4 &viewMatrix, const glm::mat4 &projMatrix){
@@ -297,7 +303,7 @@ GLuint ScreenSpaceReflection::createGBufferProgram(){
 
     void main(){
         outPosition = vec4(WorldPos, 1.0);
-        outNormal = vec4(normalize(WorldPos), 1.0);
+        outNormal = vec4(normalize(WorldNormal), 1.0);
         outMask = vec4(1.0, 1.0, 1.0, 1.0);
     }
     )";
@@ -474,13 +480,13 @@ bool ScreenSpaceReflection::createCubeGBuffer(int width, int height){
     // depth
     glGenTextures(1, &m_cubeDepthTexture);
     glBindTexture(GL_TEXTURE_2D, m_cubeDepthTexture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-    // G buffer挂载到cubeFBO
+    // GBuffer挂载到cubeFBO
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_cubePositionTexture, 0);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, m_cubeNormalTexture, 0);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, m_cubeMaskTexture, 0);
@@ -519,6 +525,21 @@ void ScreenSpaceReflection::beginScenePass(){
 }
 
 void ScreenSpaceReflection::endScenePass(){
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void ScreenSpaceReflection::beginCubeGBufferPass(){
+    glBindFramebuffer(GL_FRAMEBUFFER, m_cubeGBufferFBO);
+    glViewport(0, 0, m_screenWidth, m_screenHeight);
+
+    glEnable(GL_DEPTH_TEST);
+    glDepthMask(true);
+
+    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+}
+
+void ScreenSpaceReflection::endCubeGBufferPass(){
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 

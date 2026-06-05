@@ -92,13 +92,17 @@ void rend() {
 
     _screenSpaceReflection.endScenePass();
 
-    // _screenSpaceReflection.beginCubeGBufferPass();
+    _screenSpaceReflection.beginCubeGBufferPass();
 
-    // _screenSpaceReflection.drawCubeGBuffer(cubeModelMatrix, _camera.getMatrix(), _projMatrix);
+    glm::mat4 cubeModelMatrix(1.0f);
+    cubeModelMatrix = glm::translate(cubeModelMatrix, glm::vec3(0.0f, 1.0f, 0.0f));
+    cubeModelMatrix = glm::scale(cubeModelMatrix, glm::vec3(1.0f));
 
-    // _screenSpaceReflection.endCubeGBufferPass();
+    _screenSpaceReflection.drawReflectionCube(cubeModelMatrix, _camera.getMatrix(), _projMatrix);
 
-    // _screenSpaceReflection.debugDrawCubeMask();
+    _screenSpaceReflection.endCubeGBufferPass();
+
+    _screenSpaceReflection.debugDraw();
 }
 
 uint creatLightModel() {
