@@ -2,6 +2,17 @@
 # Visual Studio and CMake temporary files
 ################################################################################
 
+# macOS
+.DS_Store
+
+# Editor directories
+.vscode/
+.idea/
+
+# Temporary files
+*.tmp
+*.log
+
 *.suo
 *.user
 *.userosscache
