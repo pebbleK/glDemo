@@ -1,4 +1,6 @@
 #include "SrceenSpaceReflection.h"
+#include "Base.h"
+#include <cmath>
 
 ScreenSpaceReflection::ScreenSpaceReflection()
 : m_ssrComputeProgram(0)
@@ -16,6 +18,9 @@ ScreenSpaceReflection::ScreenSpaceReflection()
 , m_fullscreenProgram(0)
 , m_cubeVAO(0)
 , m_quadVAO(0)
+, m_glDispatchCompute(nullptr)
+, m_glBindImageTexture(nullptr)
+, m_glMemoryBarrier(nullptr)
 {}
 
 ScreenSpaceReflection::~ScreenSpaceReflection(){}
@@ -25,6 +30,10 @@ bool ScreenSpaceReflection::init(int screenWidth, int screenHeight, int computeW
     m_screenHeight = screenHeight;
     m_computeWidth = computeWidth;
     m_computeHeight = computeHeight;
+
+    if (!loadComputeFunctions()) {
+    return false;
+}
 
     bool ok = createSceneFramebuffer(screenWidth, screenHeight);
     if(!ok){
@@ -41,10 +50,18 @@ bool ScreenSpaceReflection::init(int screenWidth, int screenHeight, int computeW
     m_cubeVAO = createReflectionPlant();
     m_gbufferProgram = createGBufferProgram();
 
+    m_ssrComputeProgram = createComputeProgram("shader/ssReflection.comp");
+    if(m_ssrComputeProgram == 0){
+        return false;
+    }
+
+    createReflectionTexture();
+
     return m_fullscreenProgram != 0
     && m_quadVAO != 0
     && m_cubeVAO != 0
-    && m_gbufferProgram != 0;
+    && m_gbufferProgram != 0
+    && m_reflectionTexture !=0;
 }
 
 // 构建FBO存放反射需要的数据
@@ -140,8 +157,8 @@ GLuint ScreenSpaceReflection::createFullscreenProgram(){
     uniform int debugMode;
     void main(){
         if (debugMode == 1) {
-            float debugColor = texture(screenTexture, TexCoord).r;
-            FragColor = vec4(vec3(1.0 - debugColor), 1.0);
+            vec3 debugColor = texture(screenTexture, TexCoord).xyz;
+            FragColor = vec4(debugColor * 0.5 + 0.5, 1.0);
         } else {
             FragColor = texture(screenTexture, TexCoord);
         }
@@ -214,9 +231,9 @@ void ScreenSpaceReflection::debugDraw() {
     glBindVertexArray(m_quadVAO);
 
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, m_cubeMaskTexture);
+    glBindTexture(GL_TEXTURE_2D, m_reflectionTexture);
     glUniform1i(glGetUniformLocation(m_fullscreenProgram, "screenTexture"), 0);
-    glUniform1i(glGetUniformLocation(m_fullscreenProgram, "debugMode"), 1);
+    glUniform1i(glGetUniformLocation(m_fullscreenProgram, "debugMode"), 0);
 
     glDisable(GL_DEPTH_TEST);
     glDepthMask(GL_FALSE);
@@ -228,8 +245,17 @@ void ScreenSpaceReflection::debugDraw() {
     glUseProgram(0);
 }
 
-bool ScreenSpaceReflection::loadComputeFunctions(){
-    return 0;
+bool ScreenSpaceReflection::loadComputeFunctions() {
+    m_glDispatchCompute = reinterpret_cast<DispatchComputeProc>(glfwGetProcAddress("glDispatchCompute"));
+    m_glBindImageTexture = reinterpret_cast<BindImageTextureProc>(glfwGetProcAddress("glBindImageTexture"));
+    m_glMemoryBarrier = reinterpret_cast<MemoryBarrierProc>(glfwGetProcAddress("glMemoryBarrier"));
+
+    if (!m_glDispatchCompute || !m_glBindImageTexture || !m_glMemoryBarrier) {
+        std::cerr << "OpenGL 4.3 compute shader functions are unavailable." << std::endl;
+        return false;
+    }
+
+    return true;
 }
 
 void ScreenSpaceReflection::resize(int screenWidth, int screenHeight){
@@ -267,7 +293,35 @@ void ScreenSpaceReflection::drawReflectionCube(
 }
 
 void ScreenSpaceReflection::dispatch(Camera &camera, const glm::mat4 &viewMatrix, const glm::mat4 &projMatrix){
+    if(m_ssrComputeProgram == 0 || m_reflectionTexture == 0){
+        return;
+    }
 
+    glUseProgram(m_ssrComputeProgram);
+
+    glUniform2i(glGetUniformLocation(m_ssrComputeProgram, "uResolution"), m_screenWidth, m_screenHeight);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, m_sceneColorTexture);
+    glUniform1i(glGetUniformLocation(m_ssrComputeProgram, "uSceneColor"), 0);
+
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, m_cubeNormalTexture);
+    glUniform1i(glGetUniformLocation(m_ssrComputeProgram, "uCubeNormal"), 1);
+
+    glActiveTexture(GL_TEXTURE2);
+    glBindTexture(GL_TEXTURE_2D, m_cubeMaskTexture);
+    glUniform1i(glGetUniformLocation(m_ssrComputeProgram, "uCubeMask"), 2);
+
+    m_glBindImageTexture(0, m_reflectionTexture, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
+
+    GLuint groupX = static_cast<GLuint>(std::ceil(m_screenWidth / 16.0f));
+    GLuint groupY = static_cast<GLuint>(std::ceil(m_screenWidth / 16.0f));
+    m_glDispatchCompute(groupX, groupY, 1);
+
+    m_glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_TEXTURE_FETCH_BARRIER_BIT);
+
+    glUseProgram(0);
 }
 
 GLuint ScreenSpaceReflection::createGBufferProgram(){
@@ -462,7 +516,7 @@ bool ScreenSpaceReflection::createCubeGBuffer(int width, int height){
     // normal
     glGenTextures(1, &m_cubeNormalTexture);
     glBindTexture(GL_TEXTURE_2D, m_cubeNormalTexture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, width, height, 0, GL_RGBA, GL_FLOAT, nullptr);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -510,6 +564,24 @@ bool ScreenSpaceReflection::createCubeGBuffer(int width, int height){
     glBindTexture(GL_TEXTURE_2D, 0);
 
     return complete;
+}
+
+void ScreenSpaceReflection::createReflectionTexture(){
+    glGenTextures(1, &m_reflectionTexture);
+    glBindTexture(GL_TEXTURE_2D, m_reflectionTexture);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, m_screenWidth, m_screenHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+void ScreenSpaceReflection::drawReflectionTexture(){
+
 }
 
 // 主程序使用

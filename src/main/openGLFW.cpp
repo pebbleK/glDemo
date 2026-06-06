@@ -102,6 +102,7 @@ void rend() {
 
     _screenSpaceReflection.endCubeGBufferPass();
 
+    _screenSpaceReflection.dispatch(_camera, _camera.getMatrix(), _projMatrix);
     _screenSpaceReflection.debugDraw();
 }
 
@@ -253,7 +254,7 @@ int main() {
 
 	// Camera initialization
 	_camera.lookAt(glm::vec3(0.0f, 2.0f, 3.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-	_camera.setSpeed(0.01f); // Set movement speed
+	_camera.setSpeed(0.1f); // Set movement speed
 	_camera.setSensitivity(0.05f); // Set mouse sensitivity
 
     VAO_sun = creatLightModel();

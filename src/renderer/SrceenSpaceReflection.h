@@ -33,11 +33,16 @@ public:
     const glm::mat4 projMatrix);
 
 private:
+#ifndef APIENTRY
+#define APIENTRY
+#endif
+
     using DispatchComputeProc = void (APIENTRY *)(GLuint num_groups_x, GLuint num_group_y, GLuint num_groups_z);
     using BindImageTextureProc = void (APIENTRY *)(GLuint uint, GLuint texture, GLint level, GLboolean layered, GLint layer, GLenum access, GLenum format);
     using MemoryBarrierProc = void (APIENTRY *)(GLbitfield barriers);
     bool loadComputeFunctions();
 
+    bool createSceneFramebuffer(int width, int height);
     GLuint createFullscreenProgram();
     uint createFullScreenQuad();
 
@@ -47,7 +52,8 @@ private:
     GLuint createGBufferProgram();
     uint createReflectionPlant();
 
-    bool createSceneFramebuffer(int width, int height);
+    void createReflectionTexture();
+    void drawReflectionTexture();
 
     GLuint createComputeProgram(const char* path);
 
@@ -77,6 +83,9 @@ private:
     GLuint m_cubeDepthTexture;
 
     // output
+    DispatchComputeProc m_glDispatchCompute;
+    BindImageTextureProc m_glBindImageTexture;
+    MemoryBarrierProc m_glMemoryBarrier;
     GLuint m_reflectionTexture;
 
 };

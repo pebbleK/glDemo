@@ -9,6 +9,7 @@
 *.vcxproj.user
 *.rsuser
 .vs/
+.clangd
 
 # Build results
 [Dd]ebug/

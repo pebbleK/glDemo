@@ -4,21 +4,35 @@
     {
       "name": "windows-vcpkg",
       "displayName": "Windows x64 with vcpkg",
-      "generator": "Visual Studio 17 2022",
+      "generator": "Visual Studio 18 2026",
       "architecture": "x64",
       "binaryDir": "${sourceDir}/build",
       "cacheVariables": {
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
         "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
       }
     },
     {
       "name": "windows-vcpkg-local",
       "displayName": "Windows x64 with local vcpkg",
-      "generator": "Visual Studio 17 2022",
+      "generator": "Visual Studio 18 2026",
       "architecture": "x64",
       "binaryDir": "${sourceDir}/build",
       "cacheVariables": {
-        "CMAKE_TOOLCHAIN_FILE": "D:/cmd/vcpkg/scripts/buildsystems/vcpkg.cmake"
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "CMAKE_TOOLCHAIN_FILE": "E:/cmd/vcpkg/scripts/buildsystems/vcpkg.cmake"
+      }
+    },
+    {
+      "name": "clangd",
+      "displayName": "clangd compile commands",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/clangd",
+      "cacheVariables": {
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_MAKE_PROGRAM": "E:/VisualStudio/Common7/IDE/CommonExtensions/Microsoft/CMake/Ninja/ninja.exe",
+        "CMAKE_TOOLCHAIN_FILE": "E:/cmd/vcpkg/scripts/buildsystems/vcpkg.cmake"
       }
     }
   ],
