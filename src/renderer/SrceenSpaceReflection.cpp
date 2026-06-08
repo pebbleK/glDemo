@@ -316,7 +316,7 @@ void ScreenSpaceReflection::dispatch(Camera &camera, const glm::mat4 &viewMatrix
     m_glBindImageTexture(0, m_reflectionTexture, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
 
     GLuint groupX = static_cast<GLuint>(std::ceil(m_screenWidth / 16.0f));
-    GLuint groupY = static_cast<GLuint>(std::ceil(m_screenWidth / 16.0f));
+    GLuint groupY = static_cast<GLuint>(std::ceil(m_screenHeight / 16.0f));
     m_glDispatchCompute(groupX, groupY, 1);
 
     m_glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_TEXTURE_FETCH_BARRIER_BIT);
