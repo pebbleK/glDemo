@@ -4,12 +4,47 @@ layout(local_size_x = 16, local_size_y = 16) in;
 layout(binding = 0, rgba8) writeonly uniform image2D outImage;
 
 uniform ivec2 uResolution;
+uniform vec3 uCameraPos;
+
+uniform mat4 uViewMatrix;
+uniform mat4 uProjMatrix;
+
 uniform sampler2D uSceneColor;
+uniform sampler2D uSceneDepth;
+uniform sampler2D uCubePosition;
 uniform sampler2D uCubeNormal;
 uniform sampler2D uCubeMask;
 
+const int MAX_STEPS = 64;
+const float STEP_SIZE = 0.08;
+const float THICKNESS = 0.01;
+
+bool toScreen(vec3 worldPos, out vec2 uv, out float depth){
+    vec4 clipPos = uProjMatrix * uViewMatrix * vec4(worldPos, 1.0);
+
+    if(clipPos.w <= 0.0){
+        return false;
+    }
+
+    vec3 ndc = clipPos.xyz / clipPos.w;
+
+    uv = ndc.xy * 0.5 + 0.5;
+    depth = ndc.z * 0.5 +0.5;
+
+    if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) {
+        return false;
+    }
+
+    if (depth < 0.0 || depth > 1.0) {
+        return false;
+    }
+
+    return true;
+}
+
 void main(){
     ivec2 pix = ivec2(gl_GlobalInvocationID.xy);
+
     if(pix.x >= uResolution.x || pix.y >= uResolution.y){
         return;
     }
@@ -17,10 +52,44 @@ void main(){
     vec2 uv = (vec2(pix) + vec2(0.5)) / vec2(uResolution);
 
     vec3 sceneColor = texture(uSceneColor, uv).rgb;
-    vec3 normalColor = texture(uCubeNormal, uv).xyz * 0.5 + 0.5;
     float mask = texture(uCubeMask, uv).r;
 
-    vec3 color = mix(sceneColor, normalColor, step(0.5, mask));
+    // 跳过非mask区域
+    if(mask < 0.5){
+        imageStore(outImage, pix, vec4(sceneColor, 1.0));
+        return;
+    }
 
-    imageStore(outImage, pix, vec4(color, 1.0));
+    vec3 worldPos = texture(uCubePosition, uv).xyz;
+    vec3 normal = normalize(texture(uCubeNormal, uv).xyz);
+
+    vec3 incidentDir = normalize(worldPos - uCameraPos);
+    vec3 reflectDir = normalize(reflect(incidentDir, normal));
+
+    vec3 rayPos = worldPos;
+
+    for(int i = 0; i < MAX_STEPS; i++){
+        rayPos += reflectDir * STEP_SIZE;
+
+        vec2 hitUV;
+        float rayDepth;
+
+        if(!toScreen(rayPos, hitUV, rayDepth)){
+            break;
+        }
+
+        float uSceneDepth = texture(uSceneColor, hitUV).r;
+
+        float depthDiff = rayDepth - uSceneDepth;
+
+        if(depthDiff > 0.0 && depthDiff < THICKNESS){
+            vec3 hitColor = texture(uSceneColor, hitUV).rgb;
+            imageStore(outImage, pix, vec4(hitColor, 1.0));
+            return;
+        }
+    }
+
+    vec3 debugColor = reflectDir * 0.5 + 0.5;
+
+    imageStore(outImage, pix, vec4(debugColor, 1.0));
 }

@@ -301,17 +301,31 @@ void ScreenSpaceReflection::dispatch(Camera &camera, const glm::mat4 &viewMatrix
 
     glUniform2i(glGetUniformLocation(m_ssrComputeProgram, "uResolution"), m_screenWidth, m_screenHeight);
 
+    glUniform3fv(glGetUniformLocation(m_ssrComputeProgram, "uCameraPos"), 1, glm::value_ptr(camera.getPosition()));
+
+    glUniformMatrix4fv(glGetUniformLocation(m_ssrComputeProgram, "uViewMatrix"), 1, GL_FALSE, glm::value_ptr(viewMatrix));
+
+    glUniformMatrix4fv(glGetUniformLocation(m_ssrComputeProgram, "uProjMatrix"), 1, GL_FALSE, glm::value_ptr(projMatrix));
+
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, m_sceneColorTexture);
     glUniform1i(glGetUniformLocation(m_ssrComputeProgram, "uSceneColor"), 0);
 
     glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, m_cubeNormalTexture);
-    glUniform1i(glGetUniformLocation(m_ssrComputeProgram, "uCubeNormal"), 1);
+    glBindTexture(GL_TEXTURE_2D, m_sceneDepthTexture);
+    glUniform1i(glGetUniformLocation(m_ssrComputeProgram, "uSceneDepth"), 1);
 
     glActiveTexture(GL_TEXTURE2);
+    glBindTexture(GL_TEXTURE_2D, m_cubePositionTexture);
+    glUniform1i(glGetUniformLocation(m_ssrComputeProgram, "uCubePosition"), 2);
+
+    glActiveTexture(GL_TEXTURE3);
+    glBindTexture(GL_TEXTURE_2D, m_cubeNormalTexture);
+    glUniform1i(glGetUniformLocation(m_ssrComputeProgram, "uCubeNormal"), 3);
+
+    glActiveTexture(GL_TEXTURE4);
     glBindTexture(GL_TEXTURE_2D, m_cubeMaskTexture);
-    glUniform1i(glGetUniformLocation(m_ssrComputeProgram, "uCubeMask"), 2);
+    glUniform1i(glGetUniformLocation(m_ssrComputeProgram, "uCubeMask"), 4);
 
     m_glBindImageTexture(0, m_reflectionTexture, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
 
@@ -507,9 +521,9 @@ bool ScreenSpaceReflection::createCubeGBuffer(int width, int height){
     // position
     glGenTextures(1, &m_cubePositionTexture);
     glBindTexture(GL_TEXTURE_2D, m_cubePositionTexture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, width, height, 0, GL_RGBA, GL_FLOAT, nullptr);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
@@ -517,8 +531,8 @@ bool ScreenSpaceReflection::createCubeGBuffer(int width, int height){
     glGenTextures(1, &m_cubeNormalTexture);
     glBindTexture(GL_TEXTURE_2D, m_cubeNormalTexture);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, width, height, 0, GL_RGBA, GL_FLOAT, nullptr);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
@@ -526,8 +540,8 @@ bool ScreenSpaceReflection::createCubeGBuffer(int width, int height){
     glGenTextures(1, &m_cubeMaskTexture);
     glBindTexture(GL_TEXTURE_2D, m_cubeMaskTexture);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
@@ -535,8 +549,8 @@ bool ScreenSpaceReflection::createCubeGBuffer(int width, int height){
     glGenTextures(1, &m_cubeDepthTexture);
     glBindTexture(GL_TEXTURE_2D, m_cubeDepthTexture);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 

@@ -34,7 +34,7 @@ layout(std140, binding = 4) uniform BlackHole {
 uniform ivec2 uResolution;
 
 const float SagA_rs = 1.269e10;
-const float D_LAMBDA = 1e7;
+const float D_LAMBDA = 1e9;
 const float ESCAPE_R = 1e30;
 
 struct Ray {
