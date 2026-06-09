@@ -78,9 +78,9 @@ void main(){
             break;
         }
 
-        float uSceneDepth = texture(uSceneColor, hitUV).r;
+        float sceneDepth = texture(uSceneDepth, hitUV).r;
 
-        float depthDiff = rayDepth - uSceneDepth;
+        float depthDiff = rayDepth - sceneDepth;
 
         if(depthDiff > 0.0 && depthDiff < THICKNESS){
             vec3 hitColor = texture(uSceneColor, hitUV).rgb;
