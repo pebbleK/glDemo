@@ -23,25 +23,13 @@ int _width = 800;
 int _height = 600;
 glm::vec3 _blackHolePosition(0.0f, 0.0f, -60.0f);
 
-void rend() {
-	glEnable(GL_DEPTH_TEST);
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glm::vec3 modelPositions = glm::vec3(0.5f, 2.5f, 0.5f);
-    glm::vec3 pointLightPositions = glm::vec3(0.7f, 2.2f, 2.0f);
-	_camera.update();
-	_projMatrix = glm::perspective(glm::radians(45.0f), (float)_width / (float)_height, 0.1f, 100.0f);
-	glm::mat4 _modelMatrix(1.0f);
-
-	_blackHoleRenderer.renderBackground(_camera, _blackHolePosition);
-	glClear(GL_DEPTH_BUFFER_BIT);
-
-    _screenSpaceReflection.beginScenePass();
-
-    // blackhole background
+// 背景部分
+void renderBlackHoleBackground() {
     _blackHoleRenderer.renderBackground(_camera, _blackHolePosition);
+}
 
-	// Object rendering
+// 模型部分
+void renderModelScene(const glm::vec3& modelPositions, const glm::vec3& pointLightPositions) {
     _shader_scene.start();
     _shader_scene.setVec3("view_pos", _camera.getPosition());
     _shader_scene.setMatrix("_viewMatrix", _camera.getMatrix());
@@ -72,12 +60,12 @@ void rend() {
     _shader_scene.setFloat("_spotLight.m_q", 0.032f);
 
     // Draw model
-    _modelMatrix = glm::mat4(1.0f);
-    _modelMatrix = glm::translate(_modelMatrix, modelPositions);
-    _modelMatrix = glm::rotate(_modelMatrix, glm::radians(190.0f), glm::vec3(0, 1.0, 0));
-    _modelMatrix = glm::rotate(_modelMatrix, glm::radians(-30.0f), glm::vec3(1.0, 0, 0));
-    _modelMatrix = glm::scale(_modelMatrix, glm::vec3(0.2f));
-    _shader_scene.setMatrix("_modelMatrix", _modelMatrix);
+    glm::mat4 modelMatrix(1.0f);
+    modelMatrix = glm::translate(modelMatrix, modelPositions);
+    modelMatrix = glm::rotate(modelMatrix, glm::radians(190.0f), glm::vec3(0, 1.0, 0));
+    modelMatrix = glm::rotate(modelMatrix, glm::radians(-30.0f), glm::vec3(1.0, 0, 0));
+    modelMatrix = glm::scale(modelMatrix, glm::vec3(0.2f));
+    _shader_scene.setMatrix("_modelMatrix", modelMatrix);
     _model->draw(_shader_scene);
     _shader_scene.end();
 
@@ -85,91 +73,52 @@ void rend() {
 	_shader_sun.start();
 	_shader_sun.setMatrix("_viewMatrix", _camera.getMatrix());
 	_shader_sun.setMatrix("_projMatrix", _projMatrix);
-	_modelMatrix = glm::mat4(1.0f);
-	_modelMatrix = glm::translate(_modelMatrix, pointLightPositions);
-	_modelMatrix = glm::scale(_modelMatrix, glm::vec3(0.2f));
-    _shader_sun.setMatrix("_modelMatrix", _modelMatrix);
+    modelMatrix = glm::mat4(1.0f);
+    modelMatrix = glm::translate(modelMatrix, pointLightPositions);
+    modelMatrix = glm::scale(modelMatrix, glm::vec3(0.2f));
+    _shader_sun.setMatrix("_modelMatrix", modelMatrix);
     glBindVertexArray(VAO_sun);
     glDrawArrays(GL_TRIANGLES, 0, 36);
     _shader_sun.end();
+}
 
-    _screenSpaceReflection.endScenePass();
-
-    _screenSpaceReflection.beginCubeGBufferPass();
-
+// SSR部分
+void renderSSR(const glm::vec3& ssrPositions) {
     glm::mat4 cubeModelMatrix(1.0f);
-    cubeModelMatrix = glm::translate(cubeModelMatrix, glm::vec3(0.0f, 1.0f, 0.0f));
+    cubeModelMatrix = glm::translate(cubeModelMatrix, ssrPositions);
     cubeModelMatrix = glm::scale(cubeModelMatrix, glm::vec3(1.0f));
-
+    _screenSpaceReflection.setCubeModelMatrix(cubeModelMatrix);
+    
+    _screenSpaceReflection.beginCubeGBufferPass();
     _screenSpaceReflection.drawCubeGBuffer(cubeModelMatrix, _camera.getMatrix(), _projMatrix);
-
     _screenSpaceReflection.endCubeGBufferPass();
 
     _screenSpaceReflection.dispatch(_camera, _camera.getMatrix(), _projMatrix);
-    
-    // flush
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glViewport(0, 0, _width, _height);
+
+}
+
+// 渲染部分
+void rend() {
     glEnable(GL_DEPTH_TEST);
-    glDepthMask(GL_TRUE);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
-    // blackhole background
-    _blackHoleRenderer.renderBackground(_camera, _blackHolePosition);
+    glm::vec3 modelPositions = glm::vec3(0.5f, 2.5f, 0.5f);
+    glm::vec3 pointLightPositions = glm::vec3(0.7f, 2.2f, 2.0f);
+    glm::vec3 ssrPositions = glm::vec3(0.0f, 1.0f, 0.0f);
 
-    // Object rendering
-    _shader_scene.start();
-    _shader_scene.setVec3("view_pos", _camera.getPosition());
-    _shader_scene.setMatrix("_viewMatrix", _camera.getMatrix());
-    _shader_scene.setMatrix("_projMatrix", _projMatrix);
-    // Directional light
-    _shader_scene.setVec3("_dirLight.m_direction", glm::vec3(-0.2f, -1.0f, -0.3f));
-    _shader_scene.setVec3("_dirLight.m_ambient", light_color * glm::vec3(0.5f));
-    _shader_scene.setVec3("_dirLight.m_diffuse", light_color * glm::vec3(0.4f));
-    _shader_scene.setVec3("_dirLight.m_specular", light_color * glm::vec3(0.5f));
-    // Point light
-    _shader_scene.setVec3("_pointLight.m_pos", pointLightPositions);
-    _shader_scene.setVec3("_pointLight.m_ambient", light_color * glm::vec3(0.05f));
-    _shader_scene.setVec3("_pointLight.m_diffuse", light_color * glm::vec3(0.8f));
-    _shader_scene.setVec3("_pointLight.m_specular", light_color * glm::vec3(1.0f));
-    _shader_scene.setFloat("_pointLight.m_c", 1.0f);
-    _shader_scene.setFloat("_pointLight.m_l", 0.09f);
-    _shader_scene.setFloat("_pointLight.m_q", 0.032f);
-    // Spotlight
-    _shader_scene.setVec3("_spotLight.m_pos", _camera.getPosition());
-    _shader_scene.setVec3("_spotLight.m_direction", _camera.getDirection());
-    _shader_scene.setFloat("_spotLight.m_cutOff", glm::cos(glm::radians(12.5f)));
-    _shader_scene.setFloat("_spotLight.m_outerCutOff", glm::cos(glm::radians(15.0f)));
-    _shader_scene.setVec3("_spotLight.m_ambient", light_color * glm::vec3(0.0f));
-    _shader_scene.setVec3("_spotLight.m_diffuse", light_color * glm::vec3(1.0f));
-    _shader_scene.setVec3("_spotLight.m_specular", light_color * glm::vec3(1.0f));
-    _shader_scene.setFloat("_spotLight.m_c", 1.0f);
-    _shader_scene.setFloat("_spotLight.m_l", 0.09f);
-    _shader_scene.setFloat("_spotLight.m_q", 0.032f);
+    _camera.update();
+    _projMatrix = glm::perspective(glm::radians(45.0f), (float)_width / (float)_height, 0.1f, 100.0f);
 
-    // Draw model
-    _modelMatrix = glm::mat4(1.0f);
-    _modelMatrix = glm::translate(_modelMatrix, modelPositions);
-    _modelMatrix = glm::rotate(_modelMatrix, glm::radians(190.0f), glm::vec3(0, 1.0, 0));
-    _modelMatrix = glm::rotate(_modelMatrix, glm::radians(-30.0f), glm::vec3(1.0, 0, 0));
-    _modelMatrix = glm::scale(_modelMatrix, glm::vec3(0.2f));
-    _shader_scene.setMatrix("_modelMatrix", _modelMatrix);
-    _model->draw(_shader_scene);
-    _shader_scene.end();
+    _screenSpaceReflection.beginScenePass();
+    renderBlackHoleBackground();
+    renderModelScene(modelPositions, pointLightPositions);
+    _screenSpaceReflection.endScenePass();
 
-	// Light source
-	_shader_sun.start();
-	_shader_sun.setMatrix("_viewMatrix", _camera.getMatrix());
-	_shader_sun.setMatrix("_projMatrix", _projMatrix);
-	_modelMatrix = glm::mat4(1.0f);
-	_modelMatrix = glm::translate(_modelMatrix, pointLightPositions);
-	_modelMatrix = glm::scale(_modelMatrix, glm::vec3(0.2f));
-    _shader_sun.setMatrix("_modelMatrix", _modelMatrix);
-    glBindVertexArray(VAO_sun);
-    glDrawArrays(GL_TRIANGLES, 0, 36);
-    _shader_sun.end();
+    renderSSR(ssrPositions);
 
-    _screenSpaceReflection.drawReflectionCube(cubeModelMatrix, _camera.getMatrix(), _projMatrix);
+    _screenSpaceReflection.blitSceneToDefaultFramebuffer();
+
+    _screenSpaceReflection.drawReflectionCube(_screenSpaceReflection.getCubeModelMatrix(), _camera.getMatrix(), _projMatrix);
 }
 
 uint creatLightModel() {

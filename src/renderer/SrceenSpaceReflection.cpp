@@ -4,7 +4,7 @@
 
 ScreenSpaceReflection::ScreenSpaceReflection()
 : m_ssrComputeProgram(0)
-, m_ssrCamera(0)
+, m_CubeModelMatrix(0)
 , m_sceneFBO(0)
 , m_sceneColorTexture(0)
 , m_sceneDepthTexture(0)
@@ -325,30 +325,26 @@ void ScreenSpaceReflection::drawCubeGBuffer(
     const glm::mat4 modelMatrix,
     const glm::mat4 viewMatrix,
     const glm::mat4 projMatrix){
-        glUseProgram(m_gbufferProgram);
 
-        glUniformMatrix4fv(
-        glGetUniformLocation(m_gbufferProgram, "uModelMatrix"),
-        1,
-        GL_FALSE,
-        glm::value_ptr(modelMatrix));
-
-        glUniformMatrix4fv(
-        glGetUniformLocation(m_gbufferProgram, "uViewMatrix"),
-        1,
-        GL_FALSE,
-        glm::value_ptr(viewMatrix));
-
-        glUniformMatrix4fv(
-        glGetUniformLocation(m_gbufferProgram, "uProjMatrix"),
-        1,
-        GL_FALSE,
-        glm::value_ptr(projMatrix));
-
-        glBindVertexArray(m_cubeVAO);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
-
-        glUseProgram(0);
+    glUseProgram(m_gbufferProgram);
+    glUniformMatrix4fv(
+    glGetUniformLocation(m_gbufferProgram, "uModelMatrix"),
+    1,
+    GL_FALSE,
+    glm::value_ptr(modelMatrix));
+    glUniformMatrix4fv(
+    glGetUniformLocation(m_gbufferProgram, "uViewMatrix"),
+    1,
+    GL_FALSE,
+    glm::value_ptr(viewMatrix));
+    glUniformMatrix4fv(
+    glGetUniformLocation(m_gbufferProgram, "uProjMatrix"),
+    1,
+    GL_FALSE,
+    glm::value_ptr(projMatrix));
+    glBindVertexArray(m_cubeVAO);
+    glDrawArrays(GL_TRIANGLES, 0, 36);
+    glUseProgram(0);
 }
 
 void ScreenSpaceReflection::drawReflectionCube(
@@ -742,4 +738,28 @@ GLuint ScreenSpaceReflection::getSceneColorTexture() const{
 
 GLuint ScreenSpaceReflection::getSceneDepthTexture() const{
     return m_sceneDepthTexture;
+}
+
+void ScreenSpaceReflection::blitSceneToDefaultFramebuffer() {
+    // 拷贝m_sceneFBO到屏幕FBO上，然后绘制SSR贴图
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, m_sceneFBO);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+
+    glBlitFramebuffer(
+        0, 0, m_screenWidth, m_screenHeight,
+        0, 0, m_screenWidth, m_screenHeight,
+        GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT,
+        GL_NEAREST
+    );
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glViewport(0, 0, m_screenWidth, m_screenHeight);
+}
+
+void ScreenSpaceReflection::setCubeModelMatrix(const glm::mat4 cubeModelMatrix){
+    m_CubeModelMatrix = cubeModelMatrix;
+}
+
+glm::mat4& ScreenSpaceReflection::getCubeModelMatrix(){
+    return m_CubeModelMatrix;
 }

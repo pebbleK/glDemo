@@ -35,8 +35,12 @@ public:
     void drawReflectionCube(
     const glm::mat4& modelMatrix,
     const glm::mat4& viewMatrix,
-    const glm::mat4& projMatrix
-);
+    const glm::mat4& projMatrix);
+
+    void blitSceneToDefaultFramebuffer();
+
+    void setCubeModelMatrix(const glm::mat4 cubeModelMatrix);
+    glm::mat4& getCubeModelMatrix();
 
 private:
 #ifndef APIENTRY
@@ -71,7 +75,7 @@ private:
     int m_screenHeight;
     int m_computeWidth;
     int m_computeHeight;
-    glm::vec3 m_ssrCamera;
+    glm::mat4 m_CubeModelMatrix;
 
     GLuint m_ssrComputeProgram;
     GLuint m_gbufferProgram;
