@@ -15,9 +15,9 @@ uniform sampler2D uCubePosition;
 uniform sampler2D uCubeNormal;
 uniform sampler2D uCubeMask;
 
-const int MAX_STEPS = 64;
-const float STEP_SIZE = 0.08;
-const float THICKNESS = 0.01;
+const int MAX_STEPS = 1024;
+const float STEP_SIZE = 0.01;
+const float THICKNESS = 0.001;
 
 bool toScreen(vec3 worldPos, out vec2 uv, out float depth){
     vec4 clipPos = uProjMatrix * uViewMatrix * vec4(worldPos, 1.0);

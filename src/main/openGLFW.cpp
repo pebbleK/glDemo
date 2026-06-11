@@ -38,6 +38,9 @@ void rend() {
 
     _screenSpaceReflection.beginScenePass();
 
+    // blackhole background
+    _blackHoleRenderer.renderBackground(_camera, _blackHolePosition);
+
 	// Object rendering
     _shader_scene.start();
     _shader_scene.setVec3("view_pos", _camera.getPosition());
@@ -98,12 +101,75 @@ void rend() {
     cubeModelMatrix = glm::translate(cubeModelMatrix, glm::vec3(0.0f, 1.0f, 0.0f));
     cubeModelMatrix = glm::scale(cubeModelMatrix, glm::vec3(1.0f));
 
-    _screenSpaceReflection.drawReflectionCube(cubeModelMatrix, _camera.getMatrix(), _projMatrix);
+    _screenSpaceReflection.drawCubeGBuffer(cubeModelMatrix, _camera.getMatrix(), _projMatrix);
 
     _screenSpaceReflection.endCubeGBufferPass();
 
     _screenSpaceReflection.dispatch(_camera, _camera.getMatrix(), _projMatrix);
-    _screenSpaceReflection.debugDraw();
+    
+    // flush
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glViewport(0, 0, _width, _height);
+    glEnable(GL_DEPTH_TEST);
+    glDepthMask(GL_TRUE);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    // blackhole background
+    _blackHoleRenderer.renderBackground(_camera, _blackHolePosition);
+
+    // Object rendering
+    _shader_scene.start();
+    _shader_scene.setVec3("view_pos", _camera.getPosition());
+    _shader_scene.setMatrix("_viewMatrix", _camera.getMatrix());
+    _shader_scene.setMatrix("_projMatrix", _projMatrix);
+    // Directional light
+    _shader_scene.setVec3("_dirLight.m_direction", glm::vec3(-0.2f, -1.0f, -0.3f));
+    _shader_scene.setVec3("_dirLight.m_ambient", light_color * glm::vec3(0.5f));
+    _shader_scene.setVec3("_dirLight.m_diffuse", light_color * glm::vec3(0.4f));
+    _shader_scene.setVec3("_dirLight.m_specular", light_color * glm::vec3(0.5f));
+    // Point light
+    _shader_scene.setVec3("_pointLight.m_pos", pointLightPositions);
+    _shader_scene.setVec3("_pointLight.m_ambient", light_color * glm::vec3(0.05f));
+    _shader_scene.setVec3("_pointLight.m_diffuse", light_color * glm::vec3(0.8f));
+    _shader_scene.setVec3("_pointLight.m_specular", light_color * glm::vec3(1.0f));
+    _shader_scene.setFloat("_pointLight.m_c", 1.0f);
+    _shader_scene.setFloat("_pointLight.m_l", 0.09f);
+    _shader_scene.setFloat("_pointLight.m_q", 0.032f);
+    // Spotlight
+    _shader_scene.setVec3("_spotLight.m_pos", _camera.getPosition());
+    _shader_scene.setVec3("_spotLight.m_direction", _camera.getDirection());
+    _shader_scene.setFloat("_spotLight.m_cutOff", glm::cos(glm::radians(12.5f)));
+    _shader_scene.setFloat("_spotLight.m_outerCutOff", glm::cos(glm::radians(15.0f)));
+    _shader_scene.setVec3("_spotLight.m_ambient", light_color * glm::vec3(0.0f));
+    _shader_scene.setVec3("_spotLight.m_diffuse", light_color * glm::vec3(1.0f));
+    _shader_scene.setVec3("_spotLight.m_specular", light_color * glm::vec3(1.0f));
+    _shader_scene.setFloat("_spotLight.m_c", 1.0f);
+    _shader_scene.setFloat("_spotLight.m_l", 0.09f);
+    _shader_scene.setFloat("_spotLight.m_q", 0.032f);
+
+    // Draw model
+    _modelMatrix = glm::mat4(1.0f);
+    _modelMatrix = glm::translate(_modelMatrix, modelPositions);
+    _modelMatrix = glm::rotate(_modelMatrix, glm::radians(190.0f), glm::vec3(0, 1.0, 0));
+    _modelMatrix = glm::rotate(_modelMatrix, glm::radians(-30.0f), glm::vec3(1.0, 0, 0));
+    _modelMatrix = glm::scale(_modelMatrix, glm::vec3(0.2f));
+    _shader_scene.setMatrix("_modelMatrix", _modelMatrix);
+    _model->draw(_shader_scene);
+    _shader_scene.end();
+
+	// Light source
+	_shader_sun.start();
+	_shader_sun.setMatrix("_viewMatrix", _camera.getMatrix());
+	_shader_sun.setMatrix("_projMatrix", _projMatrix);
+	_modelMatrix = glm::mat4(1.0f);
+	_modelMatrix = glm::translate(_modelMatrix, pointLightPositions);
+	_modelMatrix = glm::scale(_modelMatrix, glm::vec3(0.2f));
+    _shader_sun.setMatrix("_modelMatrix", _modelMatrix);
+    glBindVertexArray(VAO_sun);
+    glDrawArrays(GL_TRIANGLES, 0, 36);
+    _shader_sun.end();
+
+    _screenSpaceReflection.drawReflectionCube(cubeModelMatrix, _camera.getMatrix(), _projMatrix);
 }
 
 uint creatLightModel() {

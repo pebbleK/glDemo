@@ -16,6 +16,7 @@ ScreenSpaceReflection::ScreenSpaceReflection()
 , m_reflectionTexture(0)
 , m_gbufferProgram(0)
 , m_fullscreenProgram(0)
+, m_cubeProgram(0)
 , m_cubeVAO(0)
 , m_quadVAO(0)
 , m_glDispatchCompute(nullptr)
@@ -57,11 +58,14 @@ bool ScreenSpaceReflection::init(int screenWidth, int screenHeight, int computeW
 
     createReflectionTexture();
 
+    m_cubeProgram = createReflectionCubeProgram();
+
     return m_fullscreenProgram != 0
     && m_quadVAO != 0
     && m_cubeVAO != 0
     && m_gbufferProgram != 0
-    && m_reflectionTexture !=0;
+    && m_reflectionTexture != 0
+    && m_cubeProgram != 0;
 }
 
 // 构建FBO存放反射需要的数据
@@ -195,6 +199,61 @@ GLuint ScreenSpaceReflection::createFullscreenProgram(){
 	return program;
 }
 
+GLuint ScreenSpaceReflection::createReflectionCubeProgram(){
+    const char* vertexSource = R"(
+    #version 330 core
+    layout(location = 0) in vec3 aPos;
+    layout(location = 1) in vec2 aUV;
+    layout(location = 2) in vec3 aNormal;
+    uniform mat4 uModelMatrix;
+    uniform mat4 uViewMatrix;
+    uniform mat4 uProjMatrix;
+    void main()
+    {
+        gl_Position = uProjMatrix * uViewMatrix * uModelMatrix * vec4(aPos, 1.0);
+    })";
+    const char* fragmentSource = R"(
+    #version 330 core
+    out vec4 FragColor;
+    uniform sampler2D uReflectionTexture;
+    uniform vec2 uResolution;
+    void main()
+    {
+        vec2 screenUV = gl_FragCoord.xy / uResolution;
+        vec3 reflection = texture(uReflectionTexture, screenUV).rgb;
+        FragColor = vec4(reflection, 1.0);
+    })";
+
+    GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(vertexShader, 1, &vertexSource, nullptr);
+    glCompileShader(vertexShader);
+    if (!checkShader(vertexShader, "black hole fullscreen vertex")) {
+		glDeleteShader(vertexShader);
+		return 0;
+	}
+
+    GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(fragmentShader, 1, &fragmentSource, nullptr);
+    glCompileShader(fragmentShader);
+	if (!checkShader(fragmentShader, "black hole fullscreen fragment")) {
+		glDeleteShader(vertexShader);
+		glDeleteShader(fragmentShader);
+		return 0;
+	}
+
+    GLuint program = glCreateProgram();
+	glAttachShader(program, vertexShader);
+	glAttachShader(program, fragmentShader);
+	glLinkProgram(program);
+	glDeleteShader(vertexShader);
+	glDeleteShader(fragmentShader);
+	if (!checkProgram(program, "black hole fullscreen")) {
+		glDeleteProgram(program);
+		return 0;
+	}
+	return program;
+}
+
 uint ScreenSpaceReflection::createFullScreenQuad(){
     uint _VAO;
     uint _VBO;
@@ -262,7 +321,7 @@ void ScreenSpaceReflection::resize(int screenWidth, int screenHeight){
 
 }
 
-void ScreenSpaceReflection::drawReflectionCube(
+void ScreenSpaceReflection::drawCubeGBuffer(
     const glm::mat4 modelMatrix,
     const glm::mat4 viewMatrix,
     const glm::mat4 projMatrix){
@@ -290,6 +349,54 @@ void ScreenSpaceReflection::drawReflectionCube(
         glDrawArrays(GL_TRIANGLES, 0, 36);
 
         glUseProgram(0);
+}
+
+void ScreenSpaceReflection::drawReflectionCube(
+    const glm::mat4& modelMatrix,
+    const glm::mat4& viewMatrix,
+    const glm::mat4& projMatrix
+) {
+    glUseProgram(m_cubeProgram);
+
+    glUniformMatrix4fv(
+        glGetUniformLocation(m_cubeProgram, "uModelMatrix"),
+        1,
+        GL_FALSE,
+        glm::value_ptr(modelMatrix)
+    );
+
+    glUniformMatrix4fv(
+        glGetUniformLocation(m_cubeProgram, "uViewMatrix"),
+        1,
+        GL_FALSE,
+        glm::value_ptr(viewMatrix)
+    );
+
+    glUniformMatrix4fv(
+        glGetUniformLocation(m_cubeProgram, "uProjMatrix"),
+        1,
+        GL_FALSE,
+        glm::value_ptr(projMatrix)
+    );
+
+    glUniform2f(
+        glGetUniformLocation(m_cubeProgram, "uResolution"),
+        static_cast<float>(m_screenWidth),
+        static_cast<float>(m_screenHeight)
+    );
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, m_reflectionTexture);
+    glUniform1i(glGetUniformLocation(m_cubeProgram, "uReflectionTexture"), 0);
+
+    glEnable(GL_DEPTH_TEST);
+    glDepthMask(GL_TRUE);
+
+    glBindVertexArray(m_cubeVAO);
+    glDrawArrays(GL_TRIANGLES, 0, 36);
+    glBindVertexArray(0);
+
+    glUseProgram(0);
 }
 
 void ScreenSpaceReflection::dispatch(Camera &camera, const glm::mat4 &viewMatrix, const glm::mat4 &projMatrix){

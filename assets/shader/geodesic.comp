@@ -46,6 +46,38 @@ struct Ray {
 vec4 objectColor = vec4(0.0);
 vec3 hitCenter = vec3(0.0);
 float hitRadius = 0.0;
+float diskHitRadius = 0.0;
+vec3 basisX = vec3(1.0, 0.0, 0.0);
+vec3 basisY = vec3(0.0, 1.0, 0.0);
+vec3 basisZ = vec3(0.0, 0.0, 1.0);
+
+vec3 toIntegrationSpace(vec3 p) {
+    return vec3(dot(p, basisX), dot(p, basisY), dot(p, basisZ));
+}
+
+vec3 toPhysicalSpace(vec3 p) {
+    return basisX * p.x + basisY * p.y + basisZ * p.z;
+}
+
+void setupIntegrationBasis(vec3 pos, vec3 dir) {
+    vec3 angularMomentum = cross(pos, dir);
+
+    if (dot(angularMomentum, angularMomentum) < 1e-8) {
+        vec3 fallback = abs(dir.y) < 0.9 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0);
+        angularMomentum = cross(dir, fallback);
+    }
+
+    basisY = normalize(angularMomentum);
+
+    vec3 radial = pos - basisY * dot(pos, basisY);
+    if (dot(radial, radial) < 1e-8) {
+        vec3 fallback = abs(basisY.y) < 0.9 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0);
+        radial = cross(basisY, fallback);
+    }
+
+    basisX = normalize(radial);
+    basisZ = normalize(cross(basisX, basisY));
+}
 
 Ray initRay(vec3 pos, vec3 dir) {
     Ray ray;
@@ -80,7 +112,7 @@ bool intercept(Ray ray, float rs) {
 }
 
 bool interceptObject(Ray ray) {
-    vec3 P = vec3(ray.x, ray.y, ray.z);
+    vec3 P = toPhysicalSpace(vec3(ray.x, ray.y, ray.z));
 
     for (int i = 0; i < numObjects; ++i) {
         vec3 center = objPosRadius[i].xyz;
@@ -127,24 +159,64 @@ void geodesicRHS(Ray ray, out vec3 d1, out vec3 d2) {
     d2.y = -2.0*dr*dtheta/r + sin(theta)*cos(theta)*dphi*dphi;
     d2.z = -2.0*dr*dphi/r - 2.0*cos(theta)/sinTheta * dtheta * dphi;
 }
-void rk4Step(inout Ray ray, float dL) {
-    vec3 k1a, k1b;
-    geodesicRHS(ray, k1a, k1b);
-
-    ray.r      += dL * k1a.x;
-    ray.theta  += dL * k1a.y;
-    ray.phi    += dL * k1a.z;
-    ray.dr     += dL * k1b.x;
-    ray.dtheta += dL * k1b.y;
-    ray.dphi   += dL * k1b.z;
-
+void updateCartesian(inout Ray ray) {
     ray.x = ray.r * sin(ray.theta) * cos(ray.phi);
     ray.y = ray.r * cos(ray.theta);
     ray.z = ray.r * sin(ray.theta) * sin(ray.phi);
 }
+
+Ray offsetRay(Ray ray, vec3 dPos, vec3 dVel, float scale) {
+    Ray outRay = ray;
+    outRay.r      += dPos.x * scale;
+    outRay.theta  += dPos.y * scale;
+    outRay.phi    += dPos.z * scale;
+    outRay.dr     += dVel.x * scale;
+    outRay.dtheta += dVel.y * scale;
+    outRay.dphi   += dVel.z * scale;
+    outRay.r = max(outRay.r, 1.0);
+    updateCartesian(outRay);
+    return outRay;
+}
+
+void rk4Step(inout Ray ray, float dL) {
+    vec3 k1Pos, k1Vel;
+    vec3 k2Pos, k2Vel;
+    vec3 k3Pos, k3Vel;
+    vec3 k4Pos, k4Vel;
+
+    geodesicRHS(ray, k1Pos, k1Vel);
+
+    Ray r2 = offsetRay(ray, k1Pos, k1Vel, 0.5 * dL);
+    geodesicRHS(r2, k2Pos, k2Vel);
+
+    Ray r3 = offsetRay(ray, k2Pos, k2Vel, 0.5 * dL);
+    geodesicRHS(r3, k3Pos, k3Vel);
+
+    Ray r4 = offsetRay(ray, k3Pos, k3Vel, dL);
+    geodesicRHS(r4, k4Pos, k4Vel);
+
+    vec3 dPos = (k1Pos + 2.0 * k2Pos + 2.0 * k3Pos + k4Pos) / 6.0;
+    vec3 dVel = (k1Vel + 2.0 * k2Vel + 2.0 * k3Vel + k4Vel) / 6.0;
+
+    ray.r      += dL * dPos.x;
+    ray.theta  += dL * dPos.y;
+    ray.phi    += dL * dPos.z;
+    ray.dr     += dL * dVel.x;
+    ray.dtheta += dL * dVel.y;
+    ray.dphi   += dL * dVel.z;
+    ray.r = max(ray.r, 1.0);
+    updateCartesian(ray);
+}
 bool crossesEquatorialPlane(vec3 oldPos, vec3 newPos) {
     bool crossed = (oldPos.y * newPos.y < 0.0);
-    float r = length(vec2(newPos.x, newPos.z));
+    if (!crossed) {
+        return false;
+    }
+
+    float t = oldPos.y / (oldPos.y - newPos.y);
+    vec3 hitPos = mix(oldPos, newPos, clamp(t, 0.0, 1.0));
+    float r = length(vec2(hitPos.x, hitPos.z));
+    diskHitRadius = r;
     return crossed && (r >= disk_r1 && r <= disk_r2);
 }
 
@@ -166,11 +238,14 @@ void main() {
 
     // Integrate in black-hole local space. cam.camPos is world-space, while
     // the Schwarzschild equations assume the black hole is at the origin.
-    Ray ray = initRay(cam.camPos - worldPos, dir);
+    vec3 localCamPos = cam.camPos - worldPos;
+    setupIntegrationBasis(localCamPos, dir);
+
+    Ray ray = initRay(toIntegrationSpace(localCamPos), toIntegrationSpace(dir));
     vec3 initialDir = dir;
 
     vec4 color = vec4(0.0);
-    vec3 prevPos = vec3(ray.x, ray.y, ray.z);
+    vec3 prevPos = toPhysicalSpace(vec3(ray.x, ray.y, ray.z));
     float lambda = 0.0;
 
     bool hitBlackHole = false;
@@ -183,7 +258,7 @@ void main() {
         rk4Step(ray, D_LAMBDA);
         lambda += D_LAMBDA;
 
-        vec3 newPos = vec3(ray.x, ray.y, ray.z);
+        vec3 newPos = toPhysicalSpace(vec3(ray.x, ray.y, ray.z));
         if (crossesEquatorialPlane(prevPos, newPos)) { hitDisk = true; break; }
         if (interceptObject(ray)) { hitObject = true; break; }
         prevPos = newPos;
@@ -191,7 +266,7 @@ void main() {
     }
 
     if (hitDisk) {
-        float r = length(vec3(ray.x, ray.y, ray.z)) / disk_r2;
+        float r = diskHitRadius / disk_r2;
         vec3 diskColor = vec3(1.0, r, 0.2);
         //r = 1.0 - abs(r - 0.5) * 2.0;
         color = vec4(diskColor, r);
@@ -200,7 +275,7 @@ void main() {
         color = vec4(0.0, 0.0, 0.0, 1.0);
 
     } else if (hitObject) {
-        vec3 P = vec3(ray.x, ray.y, ray.z);
+        vec3 P = toPhysicalSpace(vec3(ray.x, ray.y, ray.z));
         color = vec4(shadeObject(P), objectColor.a);
 
     } else {

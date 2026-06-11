@@ -27,10 +27,16 @@ public:
     */
     void debugDraw();
  
-    void drawReflectionCube(
+    void drawCubeGBuffer(
     const glm::mat4 modelMatrix,
     const glm::mat4 viewMatrix,
     const glm::mat4 projMatrix);
+
+    void drawReflectionCube(
+    const glm::mat4& modelMatrix,
+    const glm::mat4& viewMatrix,
+    const glm::mat4& projMatrix
+);
 
 private:
 #ifndef APIENTRY
@@ -42,12 +48,15 @@ private:
     using MemoryBarrierProc = void (APIENTRY *)(GLbitfield barriers);
     bool loadComputeFunctions();
 
+    GLuint createComputeProgram(const char* path);
+
     bool createSceneFramebuffer(int width, int height);
     GLuint createFullscreenProgram();
     uint createFullScreenQuad();
 
     void getCamPos(Camera &_camera);
 
+    //准备comp需要的数据缓冲
     bool createCubeGBuffer(int width, int height);
     GLuint createGBufferProgram();
     uint createReflectionPlant();
@@ -55,7 +64,7 @@ private:
     void createReflectionTexture();
     void drawReflectionTexture();
 
-    GLuint createComputeProgram(const char* path);
+    GLuint createReflectionCubeProgram();
 
 private:
     int m_screenWidth;
@@ -67,6 +76,7 @@ private:
     GLuint m_ssrComputeProgram;
     GLuint m_gbufferProgram;
     GLuint m_fullscreenProgram;
+    GLuint m_cubeProgram;
 
     GLuint m_cubeVAO;
     GLuint m_quadVAO;
