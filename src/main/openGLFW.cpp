@@ -2,6 +2,7 @@
 #include "Shader.h"
 #include "Camera.h"
 #include "read.h"
+#include "Player.h"
 #include "BlackHoleRenderer.h"
 #include "SrceenSpaceReflection.h"
 
@@ -15,6 +16,7 @@ Shader _shader_scene;
 Model* _model;
 
 Camera _camera;
+PlayerCube _player;
 BlackHoleRenderer _blackHoleRenderer;
 ScreenSpaceReflection _screenSpaceReflection;
 
@@ -62,9 +64,7 @@ void renderModelScene(const glm::vec3& modelPositions, const glm::vec3& pointLig
     // Draw model
     glm::mat4 modelMatrix(1.0f);
     modelMatrix = glm::translate(modelMatrix, modelPositions);
-    modelMatrix = glm::rotate(modelMatrix, glm::radians(190.0f), glm::vec3(0, 1.0, 0));
-    modelMatrix = glm::rotate(modelMatrix, glm::radians(-30.0f), glm::vec3(1.0, 0, 0));
-    modelMatrix = glm::scale(modelMatrix, glm::vec3(0.2f));
+    modelMatrix = glm::scale(modelMatrix, glm::vec3(20.0f));
     _shader_scene.setMatrix("_modelMatrix", modelMatrix);
     _model->draw(_shader_scene);
     _shader_scene.end();
@@ -102,16 +102,17 @@ void rend() {
     glEnable(GL_DEPTH_TEST);
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
-    glm::vec3 modelPositions = glm::vec3(0.5f, 2.5f, 0.5f);
+    glm::vec3 modelPositions = glm::vec3(0.0f, 0.0f, 0.0f);
     glm::vec3 pointLightPositions = glm::vec3(0.7f, 2.2f, 2.0f);
-    glm::vec3 ssrPositions = glm::vec3(0.0f, 1.0f, 0.0f);
+    glm::vec3 ssrPositions = glm::vec3(0.0f, 1.0f, 8.0f);
 
-    _camera.update();
+    _player.updateCamera(_camera);
     _projMatrix = glm::perspective(glm::radians(45.0f), (float)_width / (float)_height, 0.1f, 100.0f);
 
     _screenSpaceReflection.beginScenePass();
     renderBlackHoleBackground();
     renderModelScene(modelPositions, pointLightPositions);
+    _player.render(_shader_sun, _camera.getMatrix(), _projMatrix); // 复用cube shader和VAO
     _screenSpaceReflection.endScenePass();
 
     renderSSR(ssrPositions);
@@ -190,12 +191,9 @@ uint creatLightModel() {
 	return _VAO;
 }
 
-void initShader(const char* _vertexPath, const char* _fragPath) {
+void initShader() {
 	_shader_scene.initShader("shader/sceneShaderv.glsl", "shader/sceneShaderf.glsl");
 	_shader_sun.initShader("shader/vsunShader.glsl", "shader/fsunShader.glsl");
-	/*_shader_dir.initShader("shader/dirShaderv.glsl", "shader/dirShaderf.glsl");
-	_shader_point.initShader("shader/pointShaderv.glsl", "shader/pointShaderf.glsl");
-	_shader_spot.initShader("shader/spotShaderv.glsl", "shader/spotShaderf.glsl");*/
 }
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
@@ -210,34 +208,38 @@ void processInput(GLFWwindow* window) {
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) //Read window command "Exit window"
 		glfwSetWindowShouldClose(window, true);
 
-	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-		_camera.move(CAMERA_MOVE::MOVE_FRONT);
-	}
+	// if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+	// 	_camera.move(CAMERA_MOVE::MOVE_FRONT);
+	// }
 
-	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-		_camera.move(CAMERA_MOVE::MOVE_BACK);
-	}
+	// if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+	// 	_camera.move(CAMERA_MOVE::MOVE_BACK);
+	// }
 
-	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-		_camera.move(CAMERA_MOVE::MOVE_LEFT);
-	}
+	// if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+	// 	_camera.move(CAMERA_MOVE::MOVE_LEFT);
+	// }
 
-	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-		_camera.move(CAMERA_MOVE::MOVE_RIGHT);
-	}
+	// if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+	// 	_camera.move(CAMERA_MOVE::MOVE_RIGHT);
+	// }
 
-	if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
-		_camera.move(CAMERA_MOVE::MOVE_UP);
-	}
+	// if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+	// 	_camera.move(CAMERA_MOVE::MOVE_UP);
+	// }
 
-	if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
-		_camera.move(CAMERA_MOVE::MOVE_DOWN);
-	}
+	// if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
+	// 	_camera.move(CAMERA_MOVE::MOVE_DOWN);
+	// }
+
+    _player.processInput(window);
 }
 
 // Mouse input
 void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
-    _camera.onMouseMove(xpos, ypos);
+    // _camera.onMouseMove(xpos, ypos);
+
+    _player.onMouseMove(xpos, ypos);
 }
 
 int main() {
@@ -272,12 +274,15 @@ int main() {
 	_camera.setSpeed(0.01f); // Set movement speed
 	_camera.setSensitivity(0.05f); // Set mouse sensitivity
 
+    _player.init();
+
     VAO_sun = creatLightModel();
     light_color = glm::vec3(1.0f, 1.0f, 1.0f); // Light color
 
-	_model = new Model("res/model/ball.obj");
+	_model = new Model("res/model/moon.obj");
 
-	initShader("", "");
+	initShader();
+
 	if (!_blackHoleRenderer.init(_width, _height, 200, 150)) {
 		std::cout << "Failed to initialize black hole renderer" << std::endl;
 		glfwDestroyWindow(window);
@@ -292,7 +297,14 @@ int main() {
     return -1;
     }
 
+    // frametime
+    float lastFrame = 0.0f;
+
     while (!glfwWindowShouldClose(window)) {
+        float currentFrame = static_cast<float>(glfwGetTime());
+        float deltaTime = currentFrame - lastFrame;
+        lastFrame = currentFrame;
+
         processInput(window);
         // create front and back framebuffers when first creating window
         rend(); // automatically draw to back framebuffer by default

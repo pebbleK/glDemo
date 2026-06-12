@@ -27,22 +27,20 @@ private:
 	bool  m_firstMove;
 
 	glm::mat4 m_vMatrix;
+	
 public:
-	Camera() {
-		m_position = glm::vec3(1.0f);
-		m_front = glm::vec3(1.0f);
-		m_up = glm::vec3(1.0f);
-		m_speed = 0.01f;
-
-		m_pitch = 0.0f;
-		m_yaw = -90.0f;
-		m_sensitivity = 0.1f;
-
-		m_xpos = 0;
-		m_ypos = 0;
-		m_firstMove = true;
-
-		m_vMatrix = glm::mat4(1.0f);
+	Camera()
+		: m_position(glm::vec3(1.0f)),
+		m_front(glm::vec3(1.0f)),
+		m_up(glm::vec3(1.0f)),
+		m_speed(0.01f),
+		m_pitch(0.0f),
+		m_yaw(-90.0f),
+		m_sensitivity(0.1f),
+		m_xpos(0),
+		m_ypos(0),
+		m_firstMove(true),
+		m_vMatrix(glm::mat4(1.0f)) {
 	}
 	~Camera() {
 

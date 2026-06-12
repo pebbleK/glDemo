@@ -1,0 +1,50 @@
+[
+{
+  "directory": "D:/myGithub/glDemo/build/clangd",
+  "command": "D:\\mingw64\\bin\\c++.exe -DGLFW_DLL -ID:/myGithub/glDemo/src/main -ID:/myGithub/glDemo/src/renderer -ID:/myGithub/glDemo/src/camera -ID:/myGithub/glDemo/src/read -ID:/myGithub/glDemo/src/image -ID:/myGithub/glDemo/src/shader -ID:/myGithub/glDemo/src/pawn -ID:/myGithub/glDemo/third_party/stb -isystem D:/cmd/vcpkg/installed/x64-windows/include -g -std=c++17 -o CMakeFiles\\glDemo.dir\\src\\main\\openGLFW.cpp.obj -c D:\\myGithub\\glDemo\\src\\main\\openGLFW.cpp",
+  "file": "D:/myGithub/glDemo/src/main/openGLFW.cpp",
+  "output": "D:/myGithub/glDemo/build/clangd/CMakeFiles/glDemo.dir/src/main/openGLFW.cpp.obj"
+},
+{
+  "directory": "D:/myGithub/glDemo/build/clangd",
+  "command": "D:\\mingw64\\bin\\c++.exe -DGLFW_DLL -ID:/myGithub/glDemo/src/main -ID:/myGithub/glDemo/src/renderer -ID:/myGithub/glDemo/src/camera -ID:/myGithub/glDemo/src/read -ID:/myGithub/glDemo/src/image -ID:/myGithub/glDemo/src/shader -ID:/myGithub/glDemo/src/pawn -ID:/myGithub/glDemo/third_party/stb -isystem D:/cmd/vcpkg/installed/x64-windows/include -g -std=c++17 -o CMakeFiles\\glDemo.dir\\src\\renderer\\BlackHoleRenderer.cpp.obj -c D:\\myGithub\\glDemo\\src\\renderer\\BlackHoleRenderer.cpp",
+  "file": "D:/myGithub/glDemo/src/renderer/BlackHoleRenderer.cpp",
+  "output": "D:/myGithub/glDemo/build/clangd/CMakeFiles/glDemo.dir/src/renderer/BlackHoleRenderer.cpp.obj"
+},
+{
+  "directory": "D:/myGithub/glDemo/build/clangd",
+  "command": "D:\\mingw64\\bin\\c++.exe -DGLFW_DLL -ID:/myGithub/glDemo/src/main -ID:/myGithub/glDemo/src/renderer -ID:/myGithub/glDemo/src/camera -ID:/myGithub/glDemo/src/read -ID:/myGithub/glDemo/src/image -ID:/myGithub/glDemo/src/shader -ID:/myGithub/glDemo/src/pawn -ID:/myGithub/glDemo/third_party/stb -isystem D:/cmd/vcpkg/installed/x64-windows/include -g -std=c++17 -o CMakeFiles\\glDemo.dir\\src\\camera\\Camera.cpp.obj -c D:\\myGithub\\glDemo\\src\\camera\\Camera.cpp",
+  "file": "D:/myGithub/glDemo/src/camera/Camera.cpp",
+  "output": "D:/myGithub/glDemo/build/clangd/CMakeFiles/glDemo.dir/src/camera/Camera.cpp.obj"
+},
+{
+  "directory": "D:/myGithub/glDemo/build/clangd",
+  "command": "D:\\mingw64\\bin\\c++.exe -DGLFW_DLL -ID:/myGithub/glDemo/src/main -ID:/myGithub/glDemo/src/renderer -ID:/myGithub/glDemo/src/camera -ID:/myGithub/glDemo/src/read -ID:/myGithub/glDemo/src/image -ID:/myGithub/glDemo/src/shader -ID:/myGithub/glDemo/src/pawn -ID:/myGithub/glDemo/third_party/stb -isystem D:/cmd/vcpkg/installed/x64-windows/include -g -std=c++17 -o CMakeFiles\\glDemo.dir\\src\\read\\read.cpp.obj -c D:\\myGithub\\glDemo\\src\\read\\read.cpp",
+  "file": "D:/myGithub/glDemo/src/read/read.cpp",
+  "output": "D:/myGithub/glDemo/build/clangd/CMakeFiles/glDemo.dir/src/read/read.cpp.obj"
+},
+{
+  "directory": "D:/myGithub/glDemo/build/clangd",
+  "command": "D:\\mingw64\\bin\\c++.exe -DGLFW_DLL -ID:/myGithub/glDemo/src/main -ID:/myGithub/glDemo/src/renderer -ID:/myGithub/glDemo/src/camera -ID:/myGithub/glDemo/src/read -ID:/myGithub/glDemo/src/image -ID:/myGithub/glDemo/src/shader -ID:/myGithub/glDemo/src/pawn -ID:/myGithub/glDemo/third_party/stb -isystem D:/cmd/vcpkg/installed/x64-windows/include -g -std=c++17 -o CMakeFiles\\glDemo.dir\\src\\image\\Image.cpp.obj -c D:\\myGithub\\glDemo\\src\\image\\Image.cpp",
+  "file": "D:/myGithub/glDemo/src/image/Image.cpp",
+  "output": "D:/myGithub/glDemo/build/clangd/CMakeFiles/glDemo.dir/src/image/Image.cpp.obj"
+},
+{
+  "directory": "D:/myGithub/glDemo/build/clangd",
+  "command": "D:\\mingw64\\bin\\c++.exe -DGLFW_DLL -ID:/myGithub/glDemo/src/main -ID:/myGithub/glDemo/src/renderer -ID:/myGithub/glDemo/src/camera -ID:/myGithub/glDemo/src/read -ID:/myGithub/glDemo/src/image -ID:/myGithub/glDemo/src/shader -ID:/myGithub/glDemo/src/pawn -ID:/myGithub/glDemo/third_party/stb -isystem D:/cmd/vcpkg/installed/x64-windows/include -g -std=c++17 -o CMakeFiles\\glDemo.dir\\src\\shader\\Shader.cpp.obj -c D:\\myGithub\\glDemo\\src\\shader\\Shader.cpp",
+  "file": "D:/myGithub/glDemo/src/shader/Shader.cpp",
+  "output": "D:/myGithub/glDemo/build/clangd/CMakeFiles/glDemo.dir/src/shader/Shader.cpp.obj"
+},
+{
+  "directory": "D:/myGithub/glDemo/build/clangd",
+  "command": "D:\\mingw64\\bin\\c++.exe -DGLFW_DLL -ID:/myGithub/glDemo/src/main -ID:/myGithub/glDemo/src/renderer -ID:/myGithub/glDemo/src/camera -ID:/myGithub/glDemo/src/read -ID:/myGithub/glDemo/src/image -ID:/myGithub/glDemo/src/shader -ID:/myGithub/glDemo/src/pawn -ID:/myGithub/glDemo/third_party/stb -isystem D:/cmd/vcpkg/installed/x64-windows/include -g -std=c++17 -o CMakeFiles\\glDemo.dir\\src\\renderer\\SrceenSpaceReflection.cpp.obj -c D:\\myGithub\\glDemo\\src\\renderer\\SrceenSpaceReflection.cpp",
+  "file": "D:/myGithub/glDemo/src/renderer/SrceenSpaceReflection.cpp",
+  "output": "D:/myGithub/glDemo/build/clangd/CMakeFiles/glDemo.dir/src/renderer/SrceenSpaceReflection.cpp.obj"
+},
+{
+  "directory": "D:/myGithub/glDemo/build/clangd",
+  "command": "D:\\mingw64\\bin\\c++.exe -DGLFW_DLL -ID:/myGithub/glDemo/src/main -ID:/myGithub/glDemo/src/renderer -ID:/myGithub/glDemo/src/camera -ID:/myGithub/glDemo/src/read -ID:/myGithub/glDemo/src/image -ID:/myGithub/glDemo/src/shader -ID:/myGithub/glDemo/src/pawn -ID:/myGithub/glDemo/third_party/stb -isystem D:/cmd/vcpkg/installed/x64-windows/include -g -std=c++17 -o CMakeFiles\\glDemo.dir\\src\\pawn\\Player.cpp.obj -c D:\\myGithub\\glDemo\\src\\pawn\\Player.cpp",
+  "file": "D:/myGithub/glDemo/src/pawn/Player.cpp",
+  "output": "D:/myGithub/glDemo/build/clangd/CMakeFiles/glDemo.dir/src/pawn/Player.cpp.obj"
+}
+]

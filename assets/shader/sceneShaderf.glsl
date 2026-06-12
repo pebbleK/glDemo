@@ -149,7 +149,7 @@ void main(){
 	_result += calculatePoint(_pointLight, _normal, _viewDir, outFragPos);
 
 	// caculate spotlight
-	_result += calculateSpot(_spotLight, _normal, _viewDir, outFragPos);
+	// _result += calculateSpot(_spotLight, _normal, _viewDir, outFragPos);
 
 	FragColor = vec4(_result, 1.0f);
 };

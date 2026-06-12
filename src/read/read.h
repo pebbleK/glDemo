@@ -8,8 +8,6 @@
 #define TEXTURE_DIFFUSE_STR "m_diffuse"
 #define TEXTURE_SPECULAR_STR "m_specular"
 
-
-// The advantage of using struct is that the memory layout of struct is continuous, which is not necessarily the case for class
 struct Vertex {
 	glm::vec3 m_pos;
 	glm::vec3 m_normal;
