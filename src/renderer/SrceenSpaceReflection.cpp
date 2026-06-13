@@ -1,5 +1,5 @@
 #include "SrceenSpaceReflection.h"
-#include "Base.h"
+#include "Main.h"
 #include <cmath>
 
 ScreenSpaceReflection::ScreenSpaceReflection()
@@ -35,9 +35,7 @@ bool ScreenSpaceReflection::init(int screenWidth, int screenHeight, int computeW
     if (!loadComputeFunctions()) {
     return false;
 }
-
-    bool ok = createSceneFramebuffer(screenWidth, screenHeight);
-    if(!ok){
+    if(!createSceneFramebuffer(screenWidth, screenHeight)){
         return false;
     }
 

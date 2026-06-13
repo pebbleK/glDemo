@@ -1,5 +1,5 @@
 #pragma once
-#include "Base.h"
+#include "Main.h"
 #include "Camera.h"
 #include "Shader.h"
 
@@ -12,18 +12,18 @@ public:
     void processInput(GLFWwindow *window);
     void onMouseMove(double xpos, double ypos);
     // 需要消除速度受帧率的影响
-    void update(float deltaTime);
+    void updateTime(float deltaTime);
     void updateCamera(Camera &camera);
     void render(Shader &shader, const glm::mat4 &viewMatrix, const glm::mat4 &ProjMatrix);
 
     glm::vec3 getPosition() const;
     glm::vec3 getForward() const;
+    glm::vec3 getRight() const;
+    glm::vec3 getUp() const;
 
 private:
     void createMesh();
     void destoryMesh();
-
-    glm::vec3 getRight() const;
 
 private:
     GLuint m_VAO;
@@ -43,5 +43,10 @@ private:
     double m_lastMouseX;
     double m_lastMouseY;
     bool m_firstMouse;
+
+    // gravity system
+    float m_verticalVelocity;
+    float m_gravity;
+    bool m_isGrounded;
 
 };

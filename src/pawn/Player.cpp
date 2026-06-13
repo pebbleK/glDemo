@@ -1,8 +1,106 @@
 #include "Player.h"
 
+PlayerCube::PlayerCube()
+: m_VAO(0)
+, m_VBO(0)
+, m_position(0.0f, 0.0f, 0.0f)
+, m_velocity(0.0f)
+, m_scale(0.5f, 1.0f, 0.5f)
+, m_yaw(-90.0f)
+, m_pitch(10.0f)
+, m_moveSpeed(3.0f)
+, m_mouseSensitivity(0.08f)
+, m_thirdPersonDistance(4.0f)
+, m_thirdPersonHeight(1.2f)
+, m_lastMouseX(0.0)
+, m_lastMouseY(0.0)
+, m_firstMouse(true)
+, m_verticalVelocity(0.0f)
+, m_gravity(-0.98f)
+, m_isGrounded(false)
+{}
+
+PlayerCube::~PlayerCube() {
+}
+
+void PlayerCube::init() {
+    createMesh();
+}
+
+void PlayerCube::createMesh(){
+    if(m_VAO != 0){
+        return;
+    }
+
+    float vertices[] = {
+        // Position           // UV coordinates    // Normal
+        // Front face (Z = -0.5)
+        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,  0.0f, 0.0f, -1.0f,
+         0.5f, -0.5f, -0.5f,  1.0f, 0.0f,  0.0f, 0.0f, -1.0f,
+         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,  0.0f, 0.0f, -1.0f,
+         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,  0.0f, 0.0f, -1.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,  0.0f, 0.0f, -1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,  0.0f, 0.0f, -1.0f,
+        // Back face (Z = 0.5)
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,  0.0f, 0.0f, 1.0f,
+         0.5f, -0.5f,  0.5f,  1.0f, 0.0f,  0.0f, 0.0f, 1.0f,
+         0.5f,  0.5f,  0.5f,  1.0f, 1.0f,  0.0f, 0.0f, 1.0f,
+         0.5f,  0.5f,  0.5f,  1.0f, 1.0f,  0.0f, 0.0f, 1.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,  0.0f, 0.0f, 1.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,  0.0f, 0.0f, 1.0f,
+        // Left face (X = -0.5)
+        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,  -1.0f, 0.0f, 0.0f,
+        -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,  -1.0f, 0.0f, 0.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,  -1.0f, 0.0f, 0.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,  -1.0f, 0.0f, 0.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,  -1.0f, 0.0f, 0.0f,
+        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,  -1.0f, 0.0f, 0.0f,
+        // Right face (X = 0.5)
+         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,  1.0f, 0.0f, 0.0f,
+         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,  1.0f, 0.0f, 0.0f,
+         0.5f, -0.5f, -0.5f,  0.0f, 1.0f,  1.0f, 0.0f, 0.0f,
+         0.5f, -0.5f, -0.5f,  0.0f, 1.0f,  1.0f, 0.0f, 0.0f,
+         0.5f, -0.5f,  0.5f,  0.0f, 0.0f,  1.0f, 0.0f, 0.0f,
+         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,  1.0f, 0.0f, 0.0f,
+         // Bottom face (Y = -0.5)
+         -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,  0.0f, -1.0f, 0.0f,
+          0.5f, -0.5f, -0.5f,  1.0f, 1.0f,  0.0f, -1.0f, 0.0f,
+          0.5f, -0.5f,  0.5f,  1.0f, 0.0f,  0.0f, -1.0f, 0.0f,
+          0.5f, -0.5f,  0.5f,  1.0f, 0.0f,  0.0f, -1.0f, 0.0f,
+         -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,  0.0f, -1.0f, 0.0f,
+         -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,  0.0f, -1.0f, 0.0f,
+         // Top face (Y = 0.5)
+         -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,  0.0f, 1.0f, 0.0f,
+          0.5f,  0.5f, -0.5f,  1.0f, 1.0f,  0.0f, 1.0f, 0.0f,
+          0.5f,  0.5f,  0.5f,  1.0f, 0.0f,  0.0f, 1.0f, 0.0f,
+          0.5f,  0.5f,  0.5f,  1.0f, 0.0f,  0.0f, 1.0f, 0.0f,
+         -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,  0.0f, 1.0f, 0.0f,
+         -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,  0.0f, 1.0f, 0.0f,
+    };
+
+    glGenVertexArrays(1, &m_VAO);
+    glBindVertexArray(m_VAO);
+
+    glGenBuffers(1, &m_VBO);
+    glBindBuffer(GL_ARRAY_BUFFER, m_VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(5 * sizeof(float)));
+
+    glEnableVertexAttribArray(0);
+    glEnableVertexAttribArray(1);
+    glEnableVertexAttribArray(2);
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+}
+
 void PlayerCube::processInput(GLFWwindow* window) {
     glm::vec3 forward = getForward();
     glm::vec3 right = getRight();
+    glm::vec3 up = getUp();
 
     m_velocity = glm::vec3(0.0f);
 
@@ -22,6 +120,14 @@ void PlayerCube::processInput(GLFWwindow* window) {
         m_velocity += right;
     }
 
+    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+        m_velocity += up;
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
+        m_velocity -= up;
+    }
+
     if (glm::length(m_velocity) > 0.0f) {
         m_velocity = glm::normalize(m_velocity) * m_moveSpeed;
     }
@@ -36,7 +142,7 @@ void PlayerCube::onMouseMove(double xpos, double ypos) {
     }
 
     float xOffset = static_cast<float>(xpos - m_lastMouseX);
-    float yOffset = static_cast<float>(m_lastMouseY - ypos);
+    float yOffset = static_cast<float>(ypos - m_lastMouseY);
 
     m_lastMouseX = xpos;
     m_lastMouseY = ypos;
@@ -48,12 +154,12 @@ void PlayerCube::onMouseMove(double xpos, double ypos) {
         m_pitch = 60.0f;
     }
 
-    if (m_pitch < -10.0f) {
-        m_pitch = -10.0f;
+    if (m_pitch < -60.0f) {
+        m_pitch = -60.0f;
     }
 }
 
-void PlayerCube::update(float deltaTime) {
+void PlayerCube::updateTime(float deltaTime) {
     m_position += m_velocity * deltaTime;
 }
 
@@ -69,11 +175,9 @@ void PlayerCube::updateCamera(Camera& camera) {
     glm::vec3 cameraPosition =
         target - forward * horizontalDistance + glm::vec3(0.0f, m_thirdPersonHeight + verticalOffset, 0.0f);
 
-    camera.lookAt(
-        cameraPosition,
+    camera.lookAt(cameraPosition,
         glm::normalize(target - cameraPosition),
-        glm::vec3(0.0f, 1.0f, 0.0f)
-    );
+        glm::vec3(0.0f, 1.0f, 0.0f));
 }
 
 void PlayerCube::render(Shader& shader, const glm::mat4& viewMatrix, const glm::mat4& projMatrix) {
@@ -93,4 +197,25 @@ void PlayerCube::render(Shader& shader, const glm::mat4& viewMatrix, const glm::
     glBindVertexArray(0);
 
     shader.end();
+}
+
+glm::vec3 PlayerCube::getPosition() const {
+    return m_position;
+}
+
+glm::vec3 PlayerCube::getForward() const {
+    float yawRadians = glm::radians(m_yaw);
+    return glm::normalize(glm::vec3(
+        cos(yawRadians),
+        0.0f,
+        sin(yawRadians)
+    ));
+}
+
+glm::vec3 PlayerCube::getRight() const {
+    return glm::normalize(glm::cross(getForward(), glm::vec3(0.0f, 1.0f, 0.0f)));
+}
+
+glm::vec3 PlayerCube::getUp() const{
+    return glm::vec3(0.0f ,1.0f, 0.0f);
 }

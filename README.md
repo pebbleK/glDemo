@@ -21,7 +21,7 @@
 glDemo/
   CMakeLists.txt             CMake build script
   src/
-    openGLFW.cpp             Main application entry
+    Main.cpp                 Main application entry
     BlackHoleRenderer.*      Black hole background renderer
     Camera.*                 Camera movement and view matrix
     Shader.*                 Shader wrapper
@@ -126,7 +126,7 @@ This makes the black hole behave as a distant background, while regular foregrou
 glDemo/
   CMakeLists.txt             CMake 构建脚本
   src/
-    openGLFW.cpp             Main application entry
+    Main.cpp                 Main application entry
     BlackHoleRenderer.*      Black hole background renderer
     Camera.*                 Camera movement and view matrix
     Shader.*                 Shader wrapper

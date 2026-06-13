@@ -9,7 +9,8 @@
       "binaryDir": "${sourceDir}/build",
       "cacheVariables": {
         "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
-        "CMAKE_TOOLCHAIN_FILE": "D:/cmd/vcpkg/scripts/buildsystems/vcpkg.cmake"
+        "CMAKE_TOOLCHAIN_FILE": "D:/cmd/vcpkg/scripts/buildsystems/vcpkg.cmake",
+        "VCPKG_TARGET_TRIPLET": "x64-windows"
       }
     },
     {
@@ -20,7 +21,8 @@
       "binaryDir": "${sourceDir}/build",
       "cacheVariables": {
         "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
-        "CMAKE_TOOLCHAIN_FILE": "D:/cmd/vcpkg/scripts/buildsystems/vcpkg.cmake"
+        "CMAKE_TOOLCHAIN_FILE": "D:/cmd/vcpkg/scripts/buildsystems/vcpkg.cmake",
+        "VCPKG_TARGET_TRIPLET": "x64-windows"
       }
     },
     {
@@ -32,7 +34,8 @@
         "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
         "CMAKE_BUILD_TYPE": "Debug",
         "CMAKE_MAKE_PROGRAM": "D:/Microsoft Visual Studio/2022/Community/Common7/IDE/CommonExtensions/Microsoft/CMake/Ninja/ninja.exe",
-        "CMAKE_TOOLCHAIN_FILE": "D:/cmd/vcpkg/scripts/buildsystems/vcpkg.cmake"
+        "CMAKE_TOOLCHAIN_FILE": "D:/cmd/vcpkg/scripts/buildsystems/vcpkg.cmake",
+        "VCPKG_TARGET_TRIPLET": "x64-windows"
       }
     }
   ],

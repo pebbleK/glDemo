@@ -1,5 +1,5 @@
 #pragma once
-#include"Base.h"
+#include"Main.h"
 #include"Shader.h"
 #include<assimp/Importer.hpp>
 #include<assimp/scene.h>
@@ -45,6 +45,9 @@ public:
 	Mesh(std::vector<Vertex> _vertexVec, std::vector<uint> _indexVec, std::vector<Texture> _texVec, Material _material);
 	void draw(Shader& _shader);
 
+	const std::vector<Vertex>& getVertices() const { return m_vertexVec; }
+    const std::vector<uint>& getIndices() const { return m_indexVec; }
+
 private:
 	std::vector<Vertex>	m_vertexVec;	// store vertex, nomal, UV
 	std::vector<uint>	m_indexVec;		// vertex index
@@ -61,6 +64,9 @@ public:
 		loadModel(_path);
 	}
 	void draw(Shader& _shader);
+
+	const std::vector<Mesh>& getMeshes() const { return m_meshVec; }
+	
 private:
 	std::vector<Mesh>	m_meshVec;
 	std::string		m_dir;
@@ -82,4 +88,3 @@ private:
 
 	std::map<std::string, uint> m_texMap; // store texture path and texID
 };
-

@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_executable(glDemo
-    src/main/openGLFW.cpp
+    src/main/Main.cpp
     src/renderer/BlackHoleRenderer.cpp
     src/camera/Camera.cpp
     src/read/read.cpp
@@ -15,6 +15,7 @@ add_executable(glDemo
     src/shader/Shader.cpp
     src/renderer/SrceenSpaceReflection.cpp
     src/pawn/Player.cpp
+    src/pawn/Collision.cpp
 )
 
 target_include_directories(glDemo PRIVATE
@@ -26,6 +27,11 @@ target_include_directories(glDemo PRIVATE
     src/shader
     src/pawn
     third_party/stb
+)
+
+target_compile_options(glDemo PRIVATE
+    $<$<CXX_COMPILER_ID:MSVC>:/EHsc>
+    $<$<CXX_COMPILER_ID:MSVC>:/utf-8>
 )
 
 find_package(OpenGL REQUIRED)

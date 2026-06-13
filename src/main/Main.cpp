@@ -1,4 +1,4 @@
-#include "Base.h"
+#include "Main.h"
 #include "Shader.h"
 #include "Camera.h"
 #include "read.h"
@@ -106,7 +106,6 @@ void rend() {
     glm::vec3 pointLightPositions = glm::vec3(0.7f, 2.2f, 2.0f);
     glm::vec3 ssrPositions = glm::vec3(0.0f, 1.0f, 8.0f);
 
-    _player.updateCamera(_camera);
     _projMatrix = glm::perspective(glm::radians(45.0f), (float)_width / (float)_height, 0.1f, 100.0f);
 
     _screenSpaceReflection.beginScenePass();
@@ -304,8 +303,11 @@ int main() {
         float currentFrame = static_cast<float>(glfwGetTime());
         float deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
+        _player.updateTime(deltaTime);
+        _player.updateCamera(_camera);
 
         processInput(window);
+
         // create front and back framebuffers when first creating window
         rend(); // automatically draw to back framebuffer by default
 

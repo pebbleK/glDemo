@@ -1,5 +1,5 @@
 #pragma once
-#include"Base.h"
+#include"Main.h"
 
 enum class CAMERA_MOVE {
 	MOVE_LEFT,
