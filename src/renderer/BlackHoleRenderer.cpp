@@ -106,7 +106,7 @@ bool BlackHoleRenderer::init(int screenWidth, int screenHeight, int computeWidth
 	}
 
 	m_fullscreenProgram = createFullscreenProgram();
-	m_computeProgram = createComputeProgram("shader/geodesic.comp");
+	m_computeProgram = createComputeProgram("shader/background.comp");
 	if (m_fullscreenProgram == 0 || m_computeProgram == 0) {
 		return false;
 	}
@@ -339,24 +339,24 @@ void BlackHoleRenderer::uploadLensObjectsUBO() {
 	LensObjectsUBOData data = {};
 	data.numObjects = 2;
 
-	float orbitA = 20.0f;
-	float orbitB = 40.0f;
-	float angleA = time * 0.35f;
-	float angleB = time * 0.22f + 3.1415926f;
+	float orbitA = 80.0f;
+	float orbitB = 120.0f;
+	float angleA = time * 0.20f + 3.1415926f;
+	float angleB = time * 0.4f;
 
 	glm::vec3 planetALocal(
 		std::cos(angleA) * orbitA,
-		1.2f * std::sin(time * 0.17f),
+		0.0f,
 		std::sin(angleA) * orbitA
 	);
 	glm::vec3 planetBLocal(
 		std::cos(angleB) * orbitB,
-		-1.0f * std::sin(time * 0.13f),
+		0.0f,
 		std::sin(angleB) * orbitB
 	);
 
-	float angleRateA = 5.35f;
-	float angleRateB = 10.35f;
+	float angleRateA = 20.00f;
+	float angleRateB = 6.00f;
 
 	data.posRadius[0] = glm::vec4(planetALocal * kSceneToMeters, angleRateA * kSceneToMeters);
 	data.posRadius[1] = glm::vec4(planetBLocal * kSceneToMeters, angleRateB * kSceneToMeters);

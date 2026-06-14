@@ -1,7 +1,7 @@
 #include "Main.h"
 #include "Shader.h"
 #include "Camera.h"
-#include "read.h"
+#include "LoadRes.h"
 #include "Player.h"
 #include "BlackHoleRenderer.h"
 #include "SrceenSpaceReflection.h"
@@ -12,11 +12,12 @@ glm::vec3 light_color(1.0f);
 
 Shader _shader_sun;
 Shader _shader_scene;
+Shader _shader_pawn;
 
-Model* _model;
-
+Model *_model;
 Camera _camera;
 PlayerCube _player;
+
 BlackHoleRenderer _blackHoleRenderer;
 ScreenSpaceReflection _screenSpaceReflection;
 
@@ -40,14 +41,14 @@ void renderModelScene(const glm::vec3& modelPositions, const glm::vec3& pointLig
     _shader_scene.setMatrix("_projMatrix", _projMatrix);
     // Directional light
     _shader_scene.setVec3("_dirLight.m_direction", glm::vec3(-0.2f, -1.0f, -0.3f));
-    _shader_scene.setVec3("_dirLight.m_ambient", light_color * glm::vec3(0.5f));
-    _shader_scene.setVec3("_dirLight.m_diffuse", light_color * glm::vec3(0.4f));
-    _shader_scene.setVec3("_dirLight.m_specular", light_color * glm::vec3(0.5f));
+    _shader_scene.setVec3("_dirLight.m_ambient", light_color * glm::vec3(0.1f));
+    _shader_scene.setVec3("_dirLight.m_diffuse", light_color * glm::vec3(0.0f));
+    _shader_scene.setVec3("_dirLight.m_specular", light_color * glm::vec3(0.0f));
     // Point light
     _shader_scene.setVec3("_pointLight.m_pos", pointLightPositions);
-    _shader_scene.setVec3("_pointLight.m_ambient", light_color * glm::vec3(0.05f));
-    _shader_scene.setVec3("_pointLight.m_diffuse", light_color * glm::vec3(0.8f));
-    _shader_scene.setVec3("_pointLight.m_specular", light_color * glm::vec3(1.0f));
+    _shader_scene.setVec3("_pointLight.m_ambient", light_color * glm::vec3(10.0f));
+    _shader_scene.setVec3("_pointLight.m_diffuse", light_color * glm::vec3(0.0f));
+    _shader_scene.setVec3("_pointLight.m_specular", light_color * glm::vec3(0.0f));
     _shader_scene.setFloat("_pointLight.m_c", 1.0f);
     _shader_scene.setFloat("_pointLight.m_l", 0.09f);
     _shader_scene.setFloat("_pointLight.m_q", 0.032f);
@@ -88,7 +89,7 @@ void renderModelScene(const glm::vec3& modelPositions, const glm::vec3& pointLig
 void renderSSR(const glm::vec3& ssrPositions) {
     glm::mat4 cubeModelMatrix(1.0f);
     cubeModelMatrix = glm::translate(cubeModelMatrix, ssrPositions);
-    cubeModelMatrix = glm::scale(cubeModelMatrix, glm::vec3(1.0f));
+    cubeModelMatrix = glm::scale(cubeModelMatrix, glm::vec3(0.5f, 5.0f, 5.0f));
     _screenSpaceReflection.setCubeModelMatrix(cubeModelMatrix);
     
     _screenSpaceReflection.beginCubeGBufferPass();
@@ -106,14 +107,14 @@ void rend() {
 
     glm::vec3 modelPositions = glm::vec3(0.0f, 0.0f, 0.0f);
     glm::vec3 pointLightPositions = glm::vec3(0.7f, 2.2f, 2.0f);
-    glm::vec3 ssrPositions = glm::vec3(0.0f, 1.0f, 8.0f);
+    glm::vec3 ssrPositions = glm::vec3(0.0f, 3.0f, 8.0f);
 
     _projMatrix = glm::perspective(glm::radians(45.0f), (float)_width / (float)_height, 0.1f, 100.0f);
 
     _screenSpaceReflection.beginScenePass();
     renderBlackHoleBackground();
     renderModelScene(modelPositions, pointLightPositions);
-    _player.render(_shader_sun, _camera.getMatrix(), _projMatrix); // 复用cube shader和VAO
+    _player.render(_shader_pawn, _camera.getMatrix(), _projMatrix); // 复用cube shader和VAO
     _screenSpaceReflection.endScenePass();
 
     renderSSR(ssrPositions);
@@ -193,8 +194,9 @@ uint creatLightModel() {
 }
 
 void initShader() {
-	_shader_scene.initShader("shader/sceneShaderv.glsl", "shader/sceneShaderf.glsl");
-	_shader_sun.initShader("shader/vsunShader.glsl", "shader/fsunShader.glsl");
+	_shader_scene.initShader("shader/modelVertex.glsl", "shader/modelFragment.glsl");
+	_shader_sun.initShader("shader/sourceVertex.glsl", "shader/sourceFragment.glsl");
+    _shader_pawn.initShader("shader/pawnVertex.glsl", "shader/pawnFragment.glsl");
 }
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {

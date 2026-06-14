@@ -31,11 +31,11 @@ glDemo/
     stb_image.h              stb image loader
   assets/
     shader/
-      geodesic.comp          Black hole geodesic compute shader
-      sceneShaderv.glsl      Scene vertex shader
-      sceneShaderf.glsl      Scene fragment shader
-      vsunShader.glsl        Light cube vertex shader
-      fsunShader.glsl        Light cube fragment shader
+      background.comp        Black hole background compute shader
+      modelVertex.glsl       Scene vertex shader
+      modelFragment.glsl     Scene fragment shader
+      sourceVertex.glsl      Light cube vertex shader
+      sourceFragment.glsl    Light cube fragment shader
     res/model/
       ball.obj
       ball.mtl
@@ -65,11 +65,11 @@ External dependencies are resolved through CMake packages. Using vcpkg is recomm
 At runtime, make sure the working directory can access:
 
 ```text
-shader/geodesic.comp
-shader/sceneShaderv.glsl
-shader/sceneShaderf.glsl
-shader/vsunShader.glsl
-shader/fsunShader.glsl
+shader/background.comp
+shader/modelVertex.glsl
+shader/modelFragment.glsl
+shader/sourceVertex.glsl
+shader/sourceFragment.glsl
 res/model/ball.obj
 res/model/ball.mtl
 ```
@@ -136,11 +136,11 @@ glDemo/
     stb_image.h              stb 图片加载库
   assets/
     shader/
-      geodesic.comp          Black hole geodesic compute shader
-      sceneShaderv.glsl      Scene vertex shader
-      sceneShaderf.glsl      Scene fragment shader
-      vsunShader.glsl        Light cube vertex shader
-      fsunShader.glsl        Light cube fragment shader
+      background.comp        Black hole background compute shader
+      modelVertex.glsl       Scene vertex shader
+      modelFragment.glsl     Scene fragment shader
+      sourceVertex.glsl      Light cube vertex shader
+      sourceFragment.glsl    Light cube fragment shader
     res/model/
       ball.obj
       ball.mtl
@@ -170,11 +170,11 @@ glDemo/
 运行时请确保工作目录能访问：
 
 ```text
-shader/geodesic.comp
-shader/sceneShaderv.glsl
-shader/sceneShaderf.glsl
-shader/vsunShader.glsl
-shader/fsunShader.glsl
+shader/background.comp
+shader/modelVertex.glsl
+shader/modelFragment.glsl
+shader/sourceVertex.glsl
+shader/sourceFragment.glsl
 res/model/ball.obj
 res/model/ball.mtl
 ```

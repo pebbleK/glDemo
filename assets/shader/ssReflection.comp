@@ -42,6 +42,11 @@ bool toScreen(vec3 worldPos, out vec2 uv, out float depth){
     return true;
 }
 
+float edgeFade(vec2 uv) {
+    float edgeDist = min(min(uv.x, 1.0 - uv.x), min(uv.y, 1.0 - uv.y));
+    return smoothstep(0.0, 0.08, edgeDist);
+}
+
 void main(){
     ivec2 pix = ivec2(gl_GlobalInvocationID.xy);
 
@@ -68,6 +73,10 @@ void main(){
 
     vec3 rayPos = worldPos;
 
+    // ssr background
+    vec2 lastUV = uv;
+    bool hasLastUV = false;
+
     for(int i = 0; i < MAX_STEPS; i++){
         rayPos += reflectDir * STEP_SIZE;
 
@@ -78,18 +87,30 @@ void main(){
             break;
         }
 
+        lastUV = hitUV;
+        hasLastUV = true;
+
         float sceneDepth = texture(uSceneDepth, hitUV).r;
 
         float depthDiff = rayDepth - sceneDepth;
 
         if(depthDiff > 0.0 && depthDiff < THICKNESS){
             vec3 hitColor = texture(uSceneColor, hitUV).rgb;
-            imageStore(outImage, pix, vec4(hitColor, 1.0));
+            float fade = edgeFade(hitUV);
+
+            vec3 finalColor = mix(sceneColor, hitColor, fade);
+            imageStore(outImage, pix, vec4(finalColor, 1.0));
             return;
         }
     }
 
-    vec3 debugColor = reflectDir * 0.5 + 0.5;
+    if (hasLastUV) {
+        vec3 reflectedColor = texture(uSceneColor, lastUV).rgb;
+        float fade = edgeFade(lastUV);
 
-    imageStore(outImage, pix, vec4(debugColor, 1.0));
+        vec3 finalColor = mix(sceneColor, reflectedColor, fade);
+        imageStore(outImage, pix, vec4(finalColor, 1.0));
+    } else {
+        imageStore(outImage, pix, vec4(sceneColor, 1.0));
+    }
 }

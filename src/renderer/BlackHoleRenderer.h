@@ -21,6 +21,7 @@ private:
 	using BindImageTextureProc = void (APIENTRY *)(GLuint unit, GLuint texture, GLint level, GLboolean layered, GLint layer, GLenum access, GLenum format);
 	using MemoryBarrierProc = void (APIENTRY *)(GLbitfield barriers);
 
+	 // std140, 填pad按16字节对齐
 	struct CameraUBOData {
 		glm::vec3 pos; float _pad0;
 		glm::vec3 right; float _pad1;

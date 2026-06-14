@@ -19,9 +19,9 @@
 },
 {
   "directory": "D:/myGithub/glDemo/build/clangd",
-  "command": "D:\\mingw64\\bin\\c++.exe -DGLFW_DLL -ID:/myGithub/glDemo/src/main -ID:/myGithub/glDemo/src/renderer -ID:/myGithub/glDemo/src/camera -ID:/myGithub/glDemo/src/read -ID:/myGithub/glDemo/src/image -ID:/myGithub/glDemo/src/shader -ID:/myGithub/glDemo/src/pawn -ID:/myGithub/glDemo/third_party/stb -isystem D:/cmd/vcpkg/installed/x64-windows/include -g -std=c++17 -o CMakeFiles\\glDemo.dir\\src\\read\\read.cpp.obj -c D:\\myGithub\\glDemo\\src\\read\\read.cpp",
-  "file": "D:/myGithub/glDemo/src/read/read.cpp",
-  "output": "D:/myGithub/glDemo/build/clangd/CMakeFiles/glDemo.dir/src/read/read.cpp.obj"
+  "command": "D:\\mingw64\\bin\\c++.exe -DGLFW_DLL -ID:/myGithub/glDemo/src/main -ID:/myGithub/glDemo/src/renderer -ID:/myGithub/glDemo/src/camera -ID:/myGithub/glDemo/src/read -ID:/myGithub/glDemo/src/image -ID:/myGithub/glDemo/src/shader -ID:/myGithub/glDemo/src/pawn -ID:/myGithub/glDemo/third_party/stb -isystem D:/cmd/vcpkg/installed/x64-windows/include -g -std=c++17 -o CMakeFiles\\glDemo.dir\\src\\read\\LoadRes.cpp.obj -c D:\\myGithub\\glDemo\\src\\read\\LoadRes.cpp",
+  "file": "D:/myGithub/glDemo/src/read/LoadRes.cpp",
+  "output": "D:/myGithub/glDemo/build/clangd/CMakeFiles/glDemo.dir/src/read/LoadRes.cpp.obj"
 },
 {
   "directory": "D:/myGithub/glDemo/build/clangd",

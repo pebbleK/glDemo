@@ -1,4 +1,4 @@
-#include "read.h"
+#include "LoadRes.h"
 #include"Image.h"
 
 

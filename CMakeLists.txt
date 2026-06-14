@@ -10,8 +10,8 @@ add_executable(glDemo
     src/main/Main.cpp
     src/renderer/BlackHoleRenderer.cpp
     src/camera/Camera.cpp
-    src/read/read.cpp
-    src/image/Image.cpp
+    src/read/LoadRes.cpp
+    src/read/Image.cpp
     src/shader/Shader.cpp
     src/renderer/SrceenSpaceReflection.cpp
     src/pawn/Player.cpp
@@ -23,7 +23,6 @@ target_include_directories(glDemo PRIVATE
     src/renderer
     src/camera
     src/read
-    src/image
     src/shader
     src/pawn
     third_party/stb

@@ -1,8 +1,10 @@
 #include "Player.h"
+#include "Image.h"
 
 PlayerCube::PlayerCube()
 : m_VAO(0)
 , m_VBO(0)
+, m_texture(0)
 , m_position(0.0f, 0.0f, 0.0f)
 , m_velocity(0.0f)
 , m_scale(0.5f, 1.0f, 0.5f)
@@ -25,6 +27,8 @@ PlayerCube::~PlayerCube() {
 
 void PlayerCube::init() {
     createMesh();
+
+    loadTexture();
 }
 
 void PlayerCube::createMesh(){
@@ -63,19 +67,19 @@ void PlayerCube::createMesh(){
          0.5f, -0.5f,  0.5f,  0.0f, 0.0f,  1.0f, 0.0f, 0.0f,
          0.5f,  0.5f,  0.5f,  1.0f, 0.0f,  1.0f, 0.0f, 0.0f,
          // Bottom face (Y = -0.5)
-         -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,  0.0f, -1.0f, 0.0f,
-          0.5f, -0.5f, -0.5f,  1.0f, 1.0f,  0.0f, -1.0f, 0.0f,
-          0.5f, -0.5f,  0.5f,  1.0f, 0.0f,  0.0f, -1.0f, 0.0f,
-          0.5f, -0.5f,  0.5f,  1.0f, 0.0f,  0.0f, -1.0f, 0.0f,
+         -0.5f, -0.5f, -0.5f,  0.0f, 0.1f,  0.0f, -1.0f, 0.0f,
+          0.5f, -0.5f, -0.5f,  0.1f, 0.1f,  0.0f, -1.0f, 0.0f,
+          0.5f, -0.5f,  0.5f,  0.1f, 0.0f,  0.0f, -1.0f, 0.0f,
+          0.5f, -0.5f,  0.5f,  0.1f, 0.0f,  0.0f, -1.0f, 0.0f,
          -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,  0.0f, -1.0f, 0.0f,
-         -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,  0.0f, -1.0f, 0.0f,
+         -0.5f, -0.5f, -0.5f,  0.0f, 0.1f,  0.0f, -1.0f, 0.0f,
          // Top face (Y = 0.5)
-         -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,  0.0f, 1.0f, 0.0f,
-          0.5f,  0.5f, -0.5f,  1.0f, 1.0f,  0.0f, 1.0f, 0.0f,
-          0.5f,  0.5f,  0.5f,  1.0f, 0.0f,  0.0f, 1.0f, 0.0f,
-          0.5f,  0.5f,  0.5f,  1.0f, 0.0f,  0.0f, 1.0f, 0.0f,
+         -0.5f,  0.5f, -0.5f,  0.0f, 0.1f,  0.0f, 1.0f, 0.0f,
+          0.5f,  0.5f, -0.5f,  0.1f, 0.1f,  0.0f, 1.0f, 0.0f,
+          0.5f,  0.5f,  0.5f,  0.1f, 0.0f,  0.0f, 1.0f, 0.0f,
+          0.5f,  0.5f,  0.5f,  0.1f, 0.0f,  0.0f, 1.0f, 0.0f,
          -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,  0.0f, 1.0f, 0.0f,
-         -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,  0.0f, 1.0f, 0.0f,
+         -0.5f,  0.5f, -0.5f,  0.0f, 0.1f,  0.0f, 1.0f, 0.0f,
     };
 
     glGenVertexArrays(1, &m_VAO);
@@ -95,6 +99,10 @@ void PlayerCube::createMesh(){
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
+}
+
+void PlayerCube::loadTexture(){     
+    m_texture = TextureManager::getInstance()->creatTexture("res/model/player.png");
 }
 
 void PlayerCube::processInput(GLFWwindow* window) {
@@ -121,8 +129,8 @@ void PlayerCube::processInput(GLFWwindow* window) {
     }
 
     if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS && m_isGrounded) {
-    m_verticalVelocity = 5.0f;
-    m_isGrounded = false;
+        m_verticalVelocity = 3.0f;
+        m_isGrounded = false;
     }
 
     // if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
@@ -216,6 +224,9 @@ void PlayerCube::render(Shader& shader, const glm::mat4& viewMatrix, const glm::
     shader.setMatrix("_projMatrix", projMatrix);
 
     glBindVertexArray(m_VAO);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, m_texture);
+    shader.setInt("ourTexture", 0);
     glDrawArrays(GL_TRIANGLES, 0, 36);
     glBindVertexArray(0);
 

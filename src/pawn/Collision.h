@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Main.h"
-#include "read.h"
+#include "LoadRes.h"
 
 class TerrainCollider{
 public:
