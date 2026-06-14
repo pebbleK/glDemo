@@ -2,6 +2,7 @@
 #include "Main.h"
 #include "Camera.h"
 #include "Shader.h"
+#include "Collision.h"
 
 class PlayerCube{
 public:
@@ -12,7 +13,7 @@ public:
     void processInput(GLFWwindow *window);
     void onMouseMove(double xpos, double ypos);
     // 需要消除速度受帧率的影响
-    void updateTime(float deltaTime);
+    void updateTime(float deltaTime, const TerrainCollider& terrain);
     void updateCamera(Camera &camera);
     void render(Shader &shader, const glm::mat4 &viewMatrix, const glm::mat4 &ProjMatrix);
 

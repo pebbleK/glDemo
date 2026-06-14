@@ -120,13 +120,18 @@ void PlayerCube::processInput(GLFWwindow* window) {
         m_velocity += right;
     }
 
-    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
-        m_velocity += up;
+    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS && m_isGrounded) {
+    m_verticalVelocity = 5.0f;
+    m_isGrounded = false;
     }
 
-    if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
-        m_velocity -= up;
-    }
+    // if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+    //     m_velocity += up;
+    // }
+
+    // if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
+    //     m_velocity -= up;
+    // }
 
     if (glm::length(m_velocity) > 0.0f) {
         m_velocity = glm::normalize(m_velocity) * m_moveSpeed;
@@ -159,10 +164,28 @@ void PlayerCube::onMouseMove(double xpos, double ypos) {
     }
 }
 
-void PlayerCube::updateTime(float deltaTime) {
-    m_position += m_velocity * deltaTime;
-}
+void PlayerCube::updateTime(float deltaTime, const TerrainCollider& terrain) {
+    m_position.x += m_velocity.x * deltaTime;
+    m_position.z += m_velocity.z * deltaTime;
 
+    m_verticalVelocity += m_gravity * deltaTime;
+    m_position.y += m_verticalVelocity * deltaTime;
+
+    float groundY = 0.0f;
+    if (terrain.getHeightAt(m_position.x, m_position.z, groundY)) {
+        float halfHeight = m_scale.y * 0.5f;
+
+        if (m_position.y - halfHeight < groundY) {
+            m_position.y = groundY + halfHeight;
+            m_verticalVelocity = 0.0f;
+            m_isGrounded = true;
+        } else {
+            m_isGrounded = false;
+        }
+    } else {
+        m_isGrounded = false;
+    }
+}
 void PlayerCube::updateCamera(Camera& camera) {
     glm::vec3 forward = getForward();
 

@@ -2,12 +2,15 @@
 #include"Image.h"
 
 
-	Mesh::Mesh(std::vector<Vertex> _vertexVec, std::vector<uint> _indexVec, std::vector<Texture> _texVec, Material _material) {
-		m_vertexVec = _vertexVec;
-		m_indexVec = _indexVec;
-		m_texVec = _texVec;
-		m_material = _material;
-
+	Mesh::Mesh(std::vector<Vertex> _vertexVec, 
+		std::vector<uint> _indexVec, 
+		std::vector<Texture> _texVec, 
+		Material _material)
+	: m_vertexVec(_vertexVec)
+	, m_indexVec(_indexVec)
+	, m_texVec(_texVec)
+	, m_material(_material)
+	{
 		setupMesh();
 	}
 
@@ -102,7 +105,7 @@
 	}
 
 	Mesh Model::processMesh(aiMesh* _mesh, const aiScene* _scene) {
-		std::vector<Vertex>	_vertexVec;
+		std::vector<Vertex>	    _vertexVec;
 		std::vector<uint>		_indexVec;	
 		std::vector<Texture>	_texVec;
 		Material				_material;

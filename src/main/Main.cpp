@@ -20,6 +20,8 @@ PlayerCube _player;
 BlackHoleRenderer _blackHoleRenderer;
 ScreenSpaceReflection _screenSpaceReflection;
 
+TerrainCollider _terrainCollider;
+
 glm::mat4 _projMatrix(1.0f);
 int _width = 800;
 int _height = 600;
@@ -272,13 +274,17 @@ int main() {
 	_camera.lookAt(glm::vec3(0.0f, 2.0f, 3.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 	_camera.setSpeed(0.01f); // Set movement speed
 	_camera.setSensitivity(0.05f); // Set mouse sensitivity
-
+    
+    // initlize
     _player.init();
 
     VAO_sun = creatLightModel();
     light_color = glm::vec3(1.0f, 1.0f, 1.0f); // Light color
 
 	_model = new Model("res/model/moon.obj");
+    glm::mat4 moonModelMatrix(1.0f);
+    moonModelMatrix = glm::scale(moonModelMatrix, glm::vec3(20.0f));
+    _terrainCollider.buildFromModel(*_model, moonModelMatrix);
 
 	initShader();
 
@@ -303,11 +309,9 @@ int main() {
         float currentFrame = static_cast<float>(glfwGetTime());
         float deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
-        _player.updateTime(deltaTime);
-        _player.updateCamera(_camera);
-
         processInput(window);
-
+        _player.updateTime(deltaTime, _terrainCollider);
+        _player.updateCamera(_camera);
         // create front and back framebuffers when first creating window
         rend(); // automatically draw to back framebuffer by default
 

@@ -6,7 +6,7 @@
 class TerrainCollider{
 public:
     void buildFromModel(const Model &model, const glm::mat4 modelMatrix);
-    bool getHeightAt(float x, float &outY, float z) const;
+    bool getHeightAt(float x, float z, float &outY) const;
 
 private:
     std::vector<glm::vec3> m_vertices;
