@@ -54,7 +54,7 @@ struct tVec2 {
 	}
 };
 
-#define SINGLE_INSTANCE(className)	private:\
+#define SINGLE_INSTANCE(className)  private:\
 										static className* m_Instance;\
 										className(const className& gw) = delete; \
 										className& operator=(const className& ins) = delete;\
@@ -62,7 +62,6 @@ struct tVec2 {
 										~className()\
 										{\
 											this->SINGLE_OVER();\
-											delete m_Instance;\
 										}\
 										static className* getInstance()\
 										{\
@@ -72,5 +71,13 @@ struct tVec2 {
 											}\
 											return m_Instance;\
 										}\
+										static void Destory()\
+										{\
+											if(m_Instance)\
+											{\
+												delete m_Instance;\
+												m_Instance = nullptr;\
+											}\
+										}\
 
-#define SINGLE_INSTANCE_SET(className)  className*  className::m_Instance = nullptr;
+#define SINGLE_INSTANCE_SET(className) className *className::m_Instance = nullptr;
